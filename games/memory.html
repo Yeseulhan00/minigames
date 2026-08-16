@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카드 짝 맞추기 · Minigames</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, 78px);
+    gap: 10px;
+    justify-content: center;
+  }
+  .card-btn {
+    width: 78px; height: 78px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    font-size: 32px;
+    font-family: inherit;
+    cursor: pointer;
+    color: transparent;
+  }
+  .card-btn:not(.flipped):hover { background: var(--card-hover); }
+  .card-btn.flipped { color: var(--text); background: var(--bg-soft); }
+  .card-btn.matched {
+    color: var(--text);
+    background: #2c4a44;
+    border-color: var(--ok);
+    cursor: default;
+  }
+</style>
+</head>
+<body>
+<div class="game-wrap">
+  <a class="back" href="../index.html">← 목록으로</a>
+  <h1>카드 짝 맞추기</h1>
+  <p class="status" id="status">카드를 뒤집어 같은 그림을 찾으세요.</p>
+  <div class="board" id="board"></div>
+  <button class="btn" id="reset">다시 섞기</button>
+</div>
+
+<script>
+const EMOJIS = ['🐶','🐱','🦊','🐼','🐸','🐵','🦁','🐰'];
+
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+let first = null, lock = false, moves = 0, matched = 0;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function updateStatus() {
+  if (matched === EMOJIS.length) {
+    statusEl.innerHTML = `<strong>완성!</strong> ${moves}번 만에 모두 맞췄어요. 🎉`;
+  } else {
+    statusEl.textContent = `시도 ${moves}번 · ${matched} / ${EMOJIS.length} 짝`;
+  }
+}
+
+function flip(btn) {
+  if (lock || btn.classList.contains('flipped') || btn.classList.contains('matched')) return;
+  btn.classList.add('flipped');
+
+  if (!first) { first = btn; return; }
+
+  moves++;
+  if (first.dataset.emoji === btn.dataset.emoji) {
+    first.classList.add('matched');
+    btn.classList.add('matched');
+    first = null;
+    matched++;
+    updateStatus();
+    return;
+  }
+
+  lock = true;
+  updateStatus();
+  const prev = first;
+  first = null;
+  setTimeout(() => {
+    prev.classList.remove('flipped');
+    btn.classList.remove('flipped');
+    lock = false;
+  }, 700);
+}
+
+function reset() {
+  first = null; lock = false; moves = 0; matched = 0;
+  boardEl.innerHTML = '';
+  shuffle([...EMOJIS, ...EMOJIS]).forEach(emoji => {
+    const b = document.createElement('button');
+    b.className = 'card-btn';
+    b.dataset.emoji = emoji;
+    b.textContent = emoji;
+    b.addEventListener('click', () => flip(b));
+    boardEl.appendChild(b);
+  });
+  updateStatus();
+}
+
+document.getElementById('reset').addEventListener('click', reset);
+reset();
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>틱택토 · Minigames</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 96px);
+    gap: 8px;
+    justify-content: center;
+  }
+  .cell {
+    width: 96px; height: 96px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 44px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .cell:disabled { cursor: default; }
+  .cell:not(:disabled):hover { background: var(--card-hover); }
+  .cell.win { background: #2c4a44; border-color: var(--ok); }
+</style>
+</head>
+<body>
+<div class="game-wrap">
+  <a class="back" href="../index.html">← 목록으로</a>
+  <h1>틱택토</h1>
+  <p class="status" id="status">당신은 ⭕ 입니다. 먼저 두세요.</p>
+  <div class="board" id="board"></div>
+  <button class="btn" id="reset">다시 시작</button>
+</div>
+
+<script>
+const LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+let cells, board, over;
+
+function winnerOf(b) {
+  for (const line of LINES) {
+    const [a, c, d] = line;
+    if (b[a] && b[a] === b[c] && b[a] === b[d]) return { mark: b[a], line };
+  }
+  return null;
+}
+
+// 미니맥스: 컴퓨터(X)는 절대 지지 않는다.
+function minimax(b, isCpu) {
+  const w = winnerOf(b);
+  if (w) return w.mark === 'X' ? 1 : -1;
+  if (b.every(Boolean)) return 0;
+
+  const scores = [];
+  for (let i = 0; i < 9; i++) {
+    if (b[i]) continue;
+    b[i] = isCpu ? 'X' : 'O';
+    scores.push(minimax(b, !isCpu));
+    b[i] = '';
+  }
+  return isCpu ? Math.max(...scores) : Math.min(...scores);
+}
+
+function bestMove() {
+  let best = -Infinity, move = -1;
+  for (let i = 0; i < 9; i++) {
+    if (board[i]) continue;
+    board[i] = 'X';
+    const score = minimax(board, false);
+    board[i] = '';
+    if (score > best) { best = score; move = i; }
+  }
+  return move;
+}
+
+function render() {
+  cells.forEach((cell, i) => {
+    cell.textContent = board[i];
+    cell.disabled = over || Boolean(board[i]);
+  });
+}
+
+function finish(result) {
+  over = true;
+  if (result) {
+    result.line.forEach(i => cells[i].classList.add('win'));
+    statusEl.innerHTML = result.mark === 'O'
+      ? '<strong>이겼습니다!</strong> 🎉'
+      : '컴퓨터가 이겼습니다. 😈';
+  } else {
+    statusEl.textContent = '무승부입니다.';
+  }
+  render();
+}
+
+function play(i) {
+  if (over || board[i]) return;
+  board[i] = 'O';
+  render();
+
+  let result = winnerOf(board);
+  if (result || board.every(Boolean)) return finish(result);
+
+  board[bestMove()] = 'X';
+  result = winnerOf(board);
+  if (result || board.every(Boolean)) return finish(result);
+
+  render();
+}
+
+function reset() {
+  board = Array(9).fill('');
+  over = false;
+  boardEl.innerHTML = '';
+  cells = board.map((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'cell';
+    b.addEventListener('click', () => play(i));
+    boardEl.appendChild(b);
+    return b;
+  });
+  statusEl.textContent = '당신은 ⭕ 입니다. 먼저 두세요.';
+  render();
+}
+
+document.getElementById('reset').addEventListener('click', reset);
+reset();
+</script>
+</body>
+</html>

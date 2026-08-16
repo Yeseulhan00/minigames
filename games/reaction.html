@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>반응 속도 테스트 · Minigames</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  #pad {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 260px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+    font-size: 20px;
+    color: var(--text);
+    font-family: inherit;
+    width: 100%;
+    cursor: pointer;
+  }
+  #pad.waiting { background: #6b2f3a; border-color: #a4485a; }
+  #pad.go { background: #1f6b52; border-color: var(--ok); }
+  #pad.early { background: #6b5a2f; border-color: #b39338; }
+  .best { margin-top: 16px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="game-wrap">
+  <a class="back" href="../index.html">← 목록으로</a>
+  <h1>반응 속도 테스트</h1>
+  <p class="status" id="status">클릭해서 시작하세요.</p>
+  <button id="pad">시작하려면 클릭</button>
+  <p class="best" id="best">최고 기록: -</p>
+</div>
+
+<script>
+const pad = document.getElementById('pad');
+const statusEl = document.getElementById('status');
+const bestEl = document.getElementById('best');
+
+let state = 'idle';   // idle | waiting | go
+let timer = null;
+let startedAt = 0;
+let best = null;
+
+function setPad(cls, text) {
+  pad.className = cls;
+  pad.textContent = text;
+}
+
+function arm() {
+  state = 'waiting';
+  setPad('waiting', '초록색이 될 때까지 기다리세요...');
+  statusEl.textContent = '준비...';
+  timer = setTimeout(() => {
+    state = 'go';
+    startedAt = performance.now();
+    setPad('go', '지금 클릭!');
+  }, 1200 + Math.random() * 3000);
+}
+
+pad.addEventListener('click', () => {
+  if (state === 'idle') return arm();
+
+  if (state === 'waiting') {
+    clearTimeout(timer);
+    state = 'idle';
+    setPad('early', '너무 빨랐어요! 다시 클릭해서 시작');
+    statusEl.textContent = '초록색이 된 다음에 눌러야 합니다.';
+    return;
+  }
+
+  // state === 'go'
+  const ms = Math.round(performance.now() - startedAt);
+  state = 'idle';
+  if (best === null || ms < best) {
+    best = ms;
+    bestEl.textContent = `최고 기록: ${best} ms`;
+  }
+  setPad('', '다시 하려면 클릭');
+  statusEl.innerHTML = `<strong>${ms} ms</strong>`;
+});
+</script>
+</body>
+</html>
