@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>복셀 크래프트</title>
+<style>
+  :root{
+    --panel:#1a2230;
+    --line:#2e3a52;
+    --ink:#eef2fb;
+    --sub:#8b96b3;
+    --accent:#7cd6ff;
+    --accent2:#ffb347;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:#0a0f1a;
+    color:var(--ink);
+    font-family:'Trebuchet MS','Segoe UI',sans-serif;
+    overflow:hidden;
+    touch-action:none;
+  }
+  .wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    height:100vh;
+    padding:10px 8px 8px;
+  }
+  h1{
+    margin:0 0 2px;
+    font-size:19px;
+    letter-spacing:2px;
+    font-weight:800;
+  }
+  h1 span{color:var(--accent2);}
+  .home{
+    position:fixed; left:10px; top:10px; z-index:20;
+    color:var(--sub); text-decoration:none; font-size:12px;
+  }
+  .home:hover{ color:var(--accent); }
+  .tagline{
+    font-size:10px;
+    letter-spacing:2px;
+    color:var(--sub);
+    margin-bottom:8px;
+    text-transform:uppercase;
+  }
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:460px;
+    flex:1;
+    min-height:0;
+    border:2px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    background:#87ceeb;
+  }
+  #gameCanvas{
+    display:block;
+    width:100%;
+    height:100%;
+    touch-action:none;
+  }
+  .crosshair{
+    position:absolute;
+    top:50%;left:50%;
+    width:16px;height:16px;
+    margin:-8px 0 0 -8px;
+    pointer-events:none;
+  }
+  .crosshair::before,.crosshair::after{
+    content:'';
+    position:absolute;
+    background:rgba(255,255,255,0.85);
+    box-shadow:0 0 2px rgba(0,0,0,0.6);
+  }
+  .crosshair::before{ left:7px; top:0; width:2px; height:16px; }
+  .crosshair::after{ top:7px; left:0; width:16px; height:2px; }
+
+  .joystick{
+    position:absolute;
+    left:14px; bottom:70px;
+    width:100px; height:100px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.25);
+  }
+  .joystick-knob{
+    position:absolute;
+    width:40px;height:40px;
+    left:30px; top:30px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.35);
+    border:1px solid rgba(255,255,255,0.5);
+  }
+  .btn-cluster{
+    position:absolute;
+    right:12px; bottom:66px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:center;
+  }
+  .action-btn{
+    width:52px;height:52px;
+    border-radius:50%;
+    background:rgba(20,24,36,0.55);
+    border:2px solid rgba(255,255,255,0.3);
+    color:#fff;
+    font-size:20px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .action-btn:active{ background:rgba(124,214,255,0.5); }
+  #jumpBtn{ width:60px;height:60px; font-size:12px; letter-spacing:1px; font-weight:700; }
+
+  .hotbar{
+    position:absolute;
+    bottom:8px; left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:4px;
+    background:rgba(10,14,24,0.55);
+    padding:5px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.15);
+  }
+  .hotslot{
+    width:34px;height:34px;
+    border-radius:6px;
+    border:2px solid rgba(255,255,255,0.2);
+    position:relative;
+  }
+  .hotslot.selected{
+    border-color:#fff;
+    box-shadow:0 0 8px rgba(255,255,255,0.6);
+  }
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(6,10,18,0.92);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    text-align:center;
+    padding:20px;
+    z-index:10;
+  }
+  .overlay.hidden{display:none;}
+  .overlay .big{
+    font-size:20px;
+    letter-spacing:1px;
+    color:var(--accent);
+    font-weight:800;
+  }
+  .overlay .small{
+    font-size:11px;
+    color:#c3cde3;
+    line-height:1.8;
+    max-width:270px;
+  }
+  .btn{
+    margin-top:6px;
+    background:var(--accent);
+    color:#08131f;
+    border:none;
+    padding:11px 26px;
+    font-family:inherit;
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:2px;
+    border-radius:22px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #3f9cc4;
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #3f9cc4;}
+  .hintline{
+    font-size:10px;
+    color:var(--sub);
+    margin-top:8px;
+    letter-spacing:0.5px;
+    text-align:center;
+  }
+  #loadingMsg{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:13px; letter-spacing:1px; z-index:5;
+    background:#87ceeb;
+  }
+</style>
+</head>
+<body>
+<a class="home" href="../index.html">← 목록으로</a>
+<div class="wrap">
+  <h1>VOXEL <span>CRAFT</span></h1>
+  <div class="tagline">블록을 부수고 쌓아보세요</div>
+
+  <div class="stage">
+    <canvas id="gameCanvas"></canvas>
+    <div id="loadingMsg">월드를 생성하는 중...</div>
+    <div class="crosshair"></div>
+
+    <div class="joystick" id="joystick">
+      <div class="joystick-knob" id="joyKnob"></div>
+    </div>
+
+    <div class="btn-cluster">
+      <button class="action-btn" id="placeBtn">🧱</button>
+      <button class="action-btn" id="breakBtn">⛏</button>
+      <button class="action-btn" id="jumpBtn">JUMP</button>
+    </div>
+
+    <div class="hotbar" id="hotbar"></div>
+
+    <div class="overlay" id="overlay">
+      <div class="big">VOXEL CRAFT</div>
+      <div class="small">
+        왼쪽 패드로 이동, 화면을 드래그해서 시점을 돌리세요.<br>
+        ⛏ 로 블록을 부수고, 🧱 로 블록을 놓아요.<br>
+        하단 목록에서 놓을 블록을 고를 수 있어요.
+      </div>
+      <button class="btn" id="startBtn">시작하기</button>
+    </div>
+  </div>
+
+  <div class="hintline">PC: WASD 이동, 드래그로 시점, Space 점프, 좌클릭 부수기/우클릭 놓기</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const stage = document.querySelector('.stage');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const loadingMsg = document.getElementById('loadingMsg');
+  const hotbarEl = document.getElementById('hotbar');
+  const joystick = document.getElementById('joystick');
+  const joyKnob = document.getElementById('joyKnob');
+  const breakBtn = document.getElementById('breakBtn');
+  const placeBtn = document.getElementById('placeBtn');
+  const jumpBtn = document.getElementById('jumpBtn');
+
+  // ---------- three.js setup ----------
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x8ec9ff);
+  scene.fog = new THREE.Fog(0x8ec9ff, 18, 46);
+
+  const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 200);
+
+  const hemi = new THREE.HemisphereLight(0xbfe3ff, 0x4a3a2a, 0.9);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xfff2d6, 0.85);
+  sun.position.set(20, 30, 10);
+  scene.add(sun);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+  function resize(){
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- block types ----------
+  const BLOCK_TYPES = [
+    { id:'grass', color:0x5fa845, label:'잔디' },
+    { id:'dirt', color:0x7a5230, label:'흙' },
+    { id:'stone', color:0x8b8f96, label:'돌' },
+    { id:'wood', color:0x6b4423, label:'나무' },
+    { id:'leaves', color:0x3f7d32, label:'잎' },
+    { id:'sand', color:0xdccd8f, label:'모래' },
+    { id:'glass', color:0x9fdfff, label:'유리' },
+    { id:'brick', color:0xa54a3a, label:'벽돌' }
+  ];
+  let selectedBlock = 'stone';
+
+  hotbarEl.innerHTML = '';
+  BLOCK_TYPES.forEach(bt=>{
+    const el = document.createElement('div');
+    el.className = 'hotslot' + (bt.id===selectedBlock ? ' selected':'');
+    el.style.background = '#' + bt.color.toString(16).padStart(6,'0');
+    el.dataset.id = bt.id;
+    el.addEventListener('touchstart',(e)=>{ e.preventDefault(); selectBlock(bt.id); }, {passive:false});
+    el.addEventListener('mousedown',(e)=>{ e.preventDefault(); selectBlock(bt.id); });
+    hotbarEl.appendChild(el);
+  });
+  function selectBlock(id){
+    selectedBlock = id;
+    [...hotbarEl.children].forEach(c=>c.classList.toggle('selected', c.dataset.id===id));
+  }
+
+  // ---------- world data ----------
+  const WORLD_SIZE = 22; // -11..10 range
+  const HALF = Math.floor(WORLD_SIZE/2);
+  const blocks = new Map(); // key "x,y,z" -> type id
+  const key = (x,y,z)=> x+','+y+','+z;
+
+  function noise2D(x,z){
+    return Math.sin(x*0.28)*1.6 + Math.cos(z*0.31)*1.6 +
+           Math.sin((x+z)*0.13)*2.2 + Math.sin(x*0.05)*1.5 + Math.cos(z*0.06)*1.5;
+  }
+
+  function generateWorld(){
+    for(let x=-HALF;x<HALF;x++){
+      for(let z=-HALF;z<HALF;z++){
+        let h = Math.floor(7 + noise2D(x,z)*0.6);
+        h = Math.max(3, Math.min(13, h));
+        const isBeach = h <= 5;
+        for(let y=0;y<=h;y++){
+          let type;
+          if(y===h) type = isBeach ? 'sand' : 'grass';
+          else if(y>=h-2) type = isBeach ? 'sand' : 'dirt';
+          else type = 'stone';
+          blocks.set(key(x,y,z), type);
+        }
+        // simple tree
+        if(!isBeach && Math.random() < 0.03 && Math.abs(x)<HALF-2 && Math.abs(z)<HALF-2){
+          const trunkH = 3 + Math.floor(Math.random()*2);
+          for(let ty=1; ty<=trunkH; ty++){
+            blocks.set(key(x,h+ty,z), 'wood');
+          }
+          const topY = h+trunkH;
+          for(let lx=-1; lx<=1; lx++){
+            for(let lz=-1; lz<=1; lz++){
+              for(let ly=0; ly<=1; ly++){
+                if(Math.abs(lx)+Math.abs(lz)===2 && Math.random()<0.5) continue;
+                const bk = key(x+lx, topY+ly, z+lz);
+                if(!blocks.has(bk)) blocks.set(bk, 'leaves');
+              }
+            }
+          }
+          blocks.set(key(x,topY+2,z), 'leaves');
+        }
+      }
+    }
+  }
+  generateWorld();
+
+  function isSolidAt(x,y,z){
+    const t = blocks.get(key(x,y,z));
+    return !!t;
+  }
+  function heightAt(x,z){
+    let h = 0;
+    for(let y=13;y>=0;y--){
+      if(blocks.has(key(x,y,z))){ h = y; break; }
+    }
+    return h;
+  }
+
+  // ---------- instanced rendering ----------
+  const geo = new THREE.BoxGeometry(1,1,1);
+  const CAPACITY = 4000;
+  const dummy = new THREE.Object3D();
+  const meshByType = {};
+  BLOCK_TYPES.forEach(bt=>{
+    const mat = new THREE.MeshLambertMaterial({
+      color: bt.color,
+      transparent: bt.id==='glass',
+      opacity: bt.id==='glass' ? 0.5 : 1
+    });
+    const mesh = new THREE.InstancedMesh(geo, mat, CAPACITY);
+    mesh.count = 0;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(mesh);
+    meshByType[bt.id] = mesh;
+  });
+
+  function rebuildInstances(){
+    const counters = {};
+    BLOCK_TYPES.forEach(bt=>counters[bt.id]=0);
+    blocks.forEach((type, k)=>{
+      const [x,y,z] = k.split(',').map(Number);
+      const exposed =
+        !isSolidAt(x+1,y,z) || !isSolidAt(x-1,y,z) ||
+        !isSolidAt(x,y+1,z) || !isSolidAt(x,y-1,z) ||
+        !isSolidAt(x,y,z+1) || !isSolidAt(x,y,z-1);
+      if(!exposed) return;
+      const mesh = meshByType[type];
+      const idx = counters[type]++;
+      if(idx >= CAPACITY) return;
+      dummy.position.set(x+0.5, y+0.5, z+0.5);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(idx, dummy.matrix);
+    });
+    BLOCK_TYPES.forEach(bt=>{
+      const mesh = meshByType[bt.id];
+      mesh.count = counters[bt.id];
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+  }
+  rebuildInstances();
+
+  // ---------- player ----------
+  const player = {
+    x: 0.5, z: 0.5, y: 0,
+    vy: 0, height: 1.7, radius: 0.32,
+    yaw: Math.PI*0.25, pitch: -0.15,
+    grounded: false, speed: 4.6
+  };
+  player.y = heightAt(Math.floor(player.x), Math.floor(player.z)) + 1.2;
+
+  // 자동으로 올라갈 수 있는 턱 높이 (한 블록 정도)
+  const STEP_HEIGHT = 1.05;
+
+  function collidesAt(px,py,pz){
+    const r = player.radius;
+    const pts = [
+      [px-r,pz-r],[px+r,pz-r],[px-r,pz+r],[px+r,pz+r]
+    ];
+    for(const [xx,zz] of pts){
+      for(let dy=0; dy<2; dy++){
+        const by = Math.floor(py+0.05+dy*(player.height-0.1));
+        if(isSolidAt(Math.floor(xx), by, Math.floor(zz))) return true;
+      }
+    }
+    return false;
+  }
+
+  // 낙하 중 충돌이 감지됐을 때, 정확히 블록 윗면에 착지하도록 실제 지면 높이를 스캔
+  function findRestY(px, pz, fromY){
+    const bx = Math.floor(px), bz = Math.floor(pz);
+    for(let y = Math.ceil(fromY)+1; y >= 0; y--){
+      if(isSolidAt(bx,y,bz)) return y+1;
+    }
+    return 0;
+  }
+
+  function updatePlayer(dt){
+    // rotation applied to camera later
+    const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize();
+
+    // inputZ: +1 = 앞으로, -1 = 뒤로 / inputX: +1 = 오른쪽, -1 = 왼쪽
+    let inputX = 0, inputZ = 0;
+    if(keys['KeyW']) inputZ += 1;
+    if(keys['KeyS']) inputZ -= 1;
+    if(keys['KeyA']) inputX -= 1;
+    if(keys['KeyD']) inputX += 1;
+    inputX += joyVec.x;
+    inputZ -= joyVec.y;
+
+    const len = Math.hypot(inputX, inputZ);
+    if(len > 0.001){
+      inputX/=len; inputZ/=len;
+      const moveVec = new THREE.Vector3();
+      moveVec.addScaledVector(forward, inputZ);
+      moveVec.addScaledVector(right, inputX);
+      moveVec.multiplyScalar(player.speed*dt);
+
+      if(!collidesAt(player.x+moveVec.x, player.y, player.z)){
+        player.x += moveVec.x;
+      } else if(!collidesAt(player.x+moveVec.x, player.y+STEP_HEIGHT, player.z) && !collidesAt(player.x, player.y+STEP_HEIGHT, player.z)){
+        player.x += moveVec.x;
+        player.y = findRestY(player.x, player.z, player.y+STEP_HEIGHT) + 0.001;
+        player.vy = 0;
+      }
+      if(!collidesAt(player.x, player.y, player.z+moveVec.z)){
+        player.z += moveVec.z;
+      } else if(!collidesAt(player.x, player.y+STEP_HEIGHT, player.z+moveVec.z) && !collidesAt(player.x, player.y+STEP_HEIGHT, player.z)){
+        player.z += moveVec.z;
+        player.y = findRestY(player.x, player.z, player.y+STEP_HEIGHT) + 0.001;
+        player.vy = 0;
+      }
+    }
+
+    // gravity — 바닥 높이를 직접 비교해서 서 있을 때 미세하게 가라앉았다 튀는 떨림을 방지
+    player.vy -= 18 * dt;
+    let ny = player.y + player.vy*dt;
+    const groundY = findRestY(player.x, player.z, player.y + 0.5);
+    if(player.vy <= 0 && ny <= groundY){
+      player.y = groundY + 0.001;
+      player.vy = 0;
+      player.grounded = true;
+    } else {
+      if(player.vy > 0 && collidesAt(player.x, ny+player.height, player.z)){
+        player.vy = 0;
+      } else {
+        player.y = ny;
+        player.grounded = false;
+      }
+    }
+    if(player.y < -5){
+      player.y = heightAt(Math.floor(player.x), Math.floor(player.z)) + 1.2;
+      player.vy = 0;
+    }
+
+    camera.position.set(player.x, player.y + player.height*0.9, player.z);
+    camera.rotation.set(0,0,0);
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = player.yaw;
+    camera.rotation.x = player.pitch;
+  }
+
+  function jump(){
+    if(player.grounded){
+      player.vy = 7.2;
+      player.grounded = false;
+    }
+  }
+
+  // ---------- raycast (voxel march) ----------
+  function raycastVoxel(){
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    const ox = camera.position.x, oy = camera.position.y, oz = camera.position.z;
+    const step = 0.08, maxDist = 6.5;
+    let last = { x:Math.floor(ox), y:Math.floor(oy), z:Math.floor(oz) };
+    for(let t=0; t<maxDist; t+=step){
+      const px = ox+dir.x*t, py = oy+dir.y*t, pz = oz+dir.z*t;
+      const bx = Math.floor(px), by = Math.floor(py), bz = Math.floor(pz);
+      if(isSolidAt(bx,by,bz)){
+        return { hit:true, block:{x:bx,y:by,z:bz}, place:last };
+      }
+      last = { x:bx, y:by, z:bz };
+    }
+    return { hit:false };
+  }
+
+  function breakBlock(){
+    const r = raycastVoxel();
+    if(r.hit){
+      blocks.delete(key(r.block.x, r.block.y, r.block.z));
+      rebuildInstances();
+    }
+  }
+  function placeBlock(){
+    const r = raycastVoxel();
+    if(r.hit){
+      const p = r.place;
+      // don't place inside the player
+      const px = Math.floor(player.x), py1 = Math.floor(player.y), py2 = Math.floor(player.y+player.height), pz = Math.floor(player.z);
+      if(p.x===px && p.z===pz && (p.y===py1 || p.y===py2)) return;
+      if(!blocks.has(key(p.x,p.y,p.z))){
+        blocks.set(key(p.x,p.y,p.z), selectedBlock);
+        rebuildInstances();
+      }
+    }
+  }
+
+  // ---------- input ----------
+  let keys = {};
+  document.addEventListener('keydown', (e)=>{
+    if(['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
+    keys[e.code] = true;
+    if(e.code === 'Space') jump();
+  });
+  document.addEventListener('keyup', (e)=>{ keys[e.code] = false; });
+
+  // joystick
+  let joyVec = { x:0, y:0 };
+  let joyTouchId = null;
+  const joyRect = ()=> joystick.getBoundingClientRect();
+  function joyStart(clientX, clientY, id){
+    joyTouchId = id;
+    joyUpdate(clientX, clientY);
+  }
+  function joyUpdate(clientX, clientY){
+    const r = joyRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    let dx = clientX - cx, dy = clientY - cy;
+    const maxR = r.width/2;
+    const d = Math.hypot(dx,dy);
+    if(d > maxR){ dx = dx/d*maxR; dy = dy/d*maxR; }
+    joyKnob.style.left = (30+dx*0.5)+'px';
+    joyKnob.style.top = (30+dy*0.5)+'px';
+    joyVec.x = dx/maxR;
+    joyVec.y = dy/maxR;
+  }
+  function joyEnd(){
+    joyTouchId = null;
+    joyVec.x = 0; joyVec.y = 0;
+    joyKnob.style.left = '30px';
+    joyKnob.style.top = '30px';
+  }
+  joystick.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    joyStart(t.clientX, t.clientY, t.identifier);
+  }, {passive:false});
+  joystick.addEventListener('touchmove',(e)=>{
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      if(t.identifier === joyTouchId) joyUpdate(t.clientX, t.clientY);
+    }
+  }, {passive:false});
+  joystick.addEventListener('touchend',(e)=>{
+    for(const t of e.changedTouches){
+      if(t.identifier === joyTouchId) joyEnd();
+    }
+  });
+  joystick.addEventListener('mousedown',(e)=>{ joyStart(e.clientX, e.clientY, 'mouse'); });
+  window.addEventListener('mousemove',(e)=>{ if(joyTouchId==='mouse') joyUpdate(e.clientX, e.clientY); });
+  window.addEventListener('mouseup',()=>{ if(joyTouchId==='mouse') joyEnd(); });
+
+  // look drag (on canvas only)
+  let lookTouchId = null;
+  let lookLastX = 0, lookLastY = 0;
+  const LOOK_SENS = 0.0045;
+  canvas.addEventListener('touchstart',(e)=>{
+    e.preventDefault();
+    if(lookTouchId === null){
+      const t = e.changedTouches[0];
+      lookTouchId = t.identifier;
+      lookLastX = t.clientX; lookLastY = t.clientY;
+    }
+  }, {passive:false});
+  canvas.addEventListener('touchmove',(e)=>{
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      if(t.identifier === lookTouchId){
+        const dx = t.clientX - lookLastX, dy = t.clientY - lookLastY;
+        lookLastX = t.clientX; lookLastY = t.clientY;
+        player.yaw -= dx*LOOK_SENS;
+        player.pitch -= dy*LOOK_SENS;
+        player.pitch = Math.max(-1.5, Math.min(1.5, player.pitch));
+      }
+    }
+  }, {passive:false});
+  canvas.addEventListener('touchend',(e)=>{
+    for(const t of e.changedTouches){
+      if(t.identifier === lookTouchId) lookTouchId = null;
+    }
+  });
+
+  let mouseLookDown = false;
+  canvas.addEventListener('mousedown', (e)=>{
+    if(e.button === 0){ mouseLookDown = true; lookLastX = e.clientX; lookLastY = e.clientY; }
+  });
+  window.addEventListener('mousemove', (e)=>{
+    if(mouseLookDown){
+      const dx = e.clientX - lookLastX, dy = e.clientY - lookLastY;
+      lookLastX = e.clientX; lookLastY = e.clientY;
+      player.yaw -= dx*LOOK_SENS;
+      player.pitch -= dy*LOOK_SENS;
+      player.pitch = Math.max(-1.5, Math.min(1.5, player.pitch));
+    }
+  });
+  window.addEventListener('mouseup', (e)=>{ if(e.button===0) mouseLookDown = false; });
+  canvas.addEventListener('contextmenu', (e)=> e.preventDefault());
+  canvas.addEventListener('mouseup', (e)=>{ if(e.button===2) placeBlock(); });
+  canvas.addEventListener('auxclick', (e)=>{ if(e.button===2) e.preventDefault(); });
+
+  breakBtn.addEventListener('touchstart',(e)=>{ e.preventDefault(); breakBlock(); }, {passive:false});
+  breakBtn.addEventListener('mousedown',(e)=>{ e.preventDefault(); breakBlock(); });
+  placeBtn.addEventListener('touchstart',(e)=>{ e.preventDefault(); placeBlock(); }, {passive:false});
+  placeBtn.addEventListener('mousedown',(e)=>{ e.preventDefault(); placeBlock(); });
+  jumpBtn.addEventListener('touchstart',(e)=>{ e.preventDefault(); jump(); }, {passive:false});
+  jumpBtn.addEventListener('mousedown',(e)=>{ e.preventDefault(); jump(); });
+
+  document.addEventListener('click', (e)=>{
+    if(e.target === canvas) breakBlock();
+  });
+
+  // ---------- loop ----------
+  let running = false;
+  let lastTime = 0;
+  function loop(t){
+    if(!running) return;
+    const dt = Math.min((t-lastTime)/1000, 0.05);
+    lastTime = t;
+    updatePlayer(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  startBtn.addEventListener('click', ()=>{
+    overlay.classList.add('hidden');
+    running = true;
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  });
+
+  resize();
+  loadingMsg.style.display = 'none';
+  camera.position.set(player.x, player.y+player.height*0.9, player.z);
+  renderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>

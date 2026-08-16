@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>드래곤 아일랜드</title>
+<style>
+  :root{
+    --bg:#0c1220;
+    --panel:#151f33;
+    --panel2:#1c2842;
+    --line:#2b3a5a;
+    --ink:#eef2fb;
+    --sub:#8b96b3;
+    --accent:#7cd6ff;
+    --gold:#ffd35c;
+    --money:#8fe38a;
+    --gem:#e79bff;
+    --food:#ffb37a;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    height:100%;margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Trebuchet MS','Segoe UI',sans-serif;overflow:hidden;
+  }
+  .wrap{display:flex;flex-direction:column;align-items:center;height:100vh;padding:8px;}
+  .frame{
+    width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;
+    border:2px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);
+  }
+  header{position:relative;padding:8px 10px 6px;background:linear-gradient(180deg,#1a2540,#141d33);border-bottom:1px solid var(--line);}
+  header .home{position:absolute;left:8px;top:6px;color:var(--sub);text-decoration:none;font-size:15px;line-height:1;padding:2px 6px;}
+  header .home:hover{color:var(--accent);}
+  h1{margin:0 0 6px;font-size:16px;letter-spacing:1px;font-weight:800;text-align:center;}
+  h1 span{color:var(--accent);}
+  .currency-bar{display:flex;gap:6px;justify-content:space-between;}
+  .cur{
+    flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:4px 2px;text-align:center;font-size:11px;font-weight:700;
+  }
+  .cur .ico{font-size:13px;}
+  .cur.gold{color:var(--gold);} .cur.money{color:var(--money);}
+  .cur.gem{color:var(--gem);} .cur.food{color:var(--food);}
+
+  nav{display:flex;background:var(--panel2);border-bottom:1px solid var(--line);}
+  nav button{
+    flex:1;background:none;border:none;color:var(--sub);font-family:inherit;
+    font-size:12px;font-weight:800;padding:10px 4px;letter-spacing:1px;border-bottom:2px solid transparent;
+  }
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  #content{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch;}
+
+  .section-title{font-size:12px;color:var(--sub);letter-spacing:1px;margin:12px 0 6px;text-transform:uppercase;}
+  .section-title:first-child{margin-top:0;}
+
+  .buy-row{display:flex;gap:8px;margin-bottom:6px;}
+  .buy-btn{
+    flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 6px;color:var(--ink);font-family:inherit;text-align:center;
+  }
+  .buy-btn .bt-label{font-size:12px;font-weight:800;margin-bottom:3px;}
+  .buy-btn .bt-cost{font-size:11px;color:var(--gold);}
+  .buy-btn:active{background:#233252;}
+  .buy-btn:disabled{opacity:0.4;}
+
+  .buy-card{
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:8px;margin-bottom:8px;
+  }
+  .buy-card .bt-label{font-size:12px;font-weight:800;margin-bottom:6px;}
+  .buy-card-row{display:flex;gap:6px;}
+  .buy-card-row .mini-btn{flex:1;}
+
+  .slot-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .slot-empty{
+    border:2px dashed var(--line);border-radius:10px;min-height:70px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:11px;color:var(--sub);padding:6px;
+  }
+
+  .dragon-card{
+    display:flex;gap:8px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;padding:8px;margin-bottom:8px;
+  }
+  .dc-icon{
+    width:52px;height:52px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:24px;position:relative;
+    background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dc) 55%, white), var(--dc));
+  }
+  .dc-icon .badge-el{position:absolute;bottom:-2px;right:-2px;font-size:13px;}
+  .dc-info{flex:1;min-width:0;}
+  .dc-name{font-size:13px;font-weight:800;}
+  .dc-lv{font-size:11px;color:var(--accent);font-weight:700;}
+  .dc-xpbar{height:5px;background:#0c1424;border-radius:3px;overflow:hidden;margin:4px 0;}
+  .dc-xpfill{height:100%;background:var(--accent);}
+  .dc-stats{font-size:10px;color:var(--sub);margin-bottom:4px;}
+  .dc-income{font-size:10px;color:var(--money);margin-bottom:4px;}
+  .dc-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .mini-btn{
+    background:var(--panel);border:1px solid var(--line);border-radius:7px;
+    padding:5px 8px;font-size:10px;color:var(--ink);font-family:inherit;font-weight:700;
+  }
+  .mini-btn:active{background:#233252;}
+  .mini-btn:disabled{opacity:0.35;}
+  .mini-btn.battle{background:var(--danger);border-color:var(--danger);color:#fff;}
+  .badge{font-size:9px;padding:2px 6px;border-radius:10px;background:#2a3b28;color:var(--money);font-weight:700;}
+  .badge.dim{background:#2a2f3f;color:var(--sub);}
+
+  .egg-zone{text-align:center;padding:20px 0;}
+  .egg-visual{font-size:70px;transition:transform 0.15s;}
+  .egg-visual.crack{animation:shake 0.5s;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0) rotate(0);}
+    20%{transform:translateX(-6px) rotate(-8deg);}
+    40%{transform:translateX(6px) rotate(8deg);}
+    60%{transform:translateX(-6px) rotate(-6deg);}
+    80%{transform:translateX(6px) rotate(6deg);}
+  }
+  .egg-hint{font-size:11px;color:var(--sub);margin:8px 0 14px;}
+  .hatch-btn{
+    background:var(--gold);color:#2a1a00;border:none;border-radius:24px;
+    padding:14px 30px;font-family:inherit;font-weight:800;font-size:13px;
+    letter-spacing:1px;box-shadow:0 4px 0 #b8871f;
+  }
+  .hatch-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b8871f;}
+  .hatch-btn:disabled{opacity:0.4;box-shadow:none;}
+
+  .battle-row{
+    display:flex;align-items:center;gap:8px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;
+  }
+  .battle-log{font-size:11px;color:var(--sub);}
+  .battle-log-item{
+    background:var(--panel2);border-left:3px solid var(--line);border-radius:6px;
+    padding:6px 8px;margin-bottom:6px;
+  }
+  .battle-log-item.win{border-left-color:var(--money);}
+  .battle-log-item.lose{border-left-color:var(--danger);}
+
+  .battle-arena{display:flex;flex-direction:column;align-items:center;}
+  .enemy-zone{
+    width:100%;background:linear-gradient(180deg,#2a1620,#1c1220);border:2px solid var(--danger);
+    border-radius:14px;padding:16px 10px;text-align:center;margin-bottom:10px;transition:background 0.15s;
+  }
+  .enemy-zone.drop-hover{background:linear-gradient(180deg,#3a1e28,#241628);border-color:var(--gold);}
+  .enemy-visual{font-size:48px;}
+  .enemy-hpbar{height:10px;background:#0c1424;border-radius:5px;overflow:hidden;margin:8px 0 4px;}
+  .enemy-hpfill{height:100%;background:linear-gradient(90deg,#ff6b6b,#ff9a4a);transition:width 0.3s;}
+  .enemy-hptext{font-size:11px;color:var(--sub);}
+  .battle-hint{font-size:11px;color:var(--sub);text-align:center;margin-bottom:12px;}
+  .team-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;width:100%;}
+  .atk-icon{
+    width:88px;background:var(--panel2);border:2px solid var(--dc);border-radius:12px;
+    padding:8px 4px;text-align:center;touch-action:none;cursor:grab;
+  }
+  .atk-icon.used{opacity:0.3;pointer-events:none;}
+  .atk-icon.dragging{box-shadow:0 8px 20px rgba(0,0,0,0.5);}
+  .atk-emoji{font-size:26px;}
+  .atk-name{font-size:10px;font-weight:800;margin-top:2px;}
+  .atk-power{font-size:9px;color:var(--sub);}
+
+  .empty-msg{font-size:12px;color:var(--sub);text-align:center;padding:20px 10px;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(6,10,18,0.85);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--panel2);border:1px solid var(--line);border-radius:14px;
+    padding:18px;max-width:320px;width:100%;text-align:center;
+  }
+  .modal-title{font-size:17px;font-weight:800;margin-bottom:10px;}
+  .modal-title.win{color:var(--money);}
+  .modal-title.lose{color:var(--danger);}
+  .vs-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0;}
+  .vs-side{font-size:34px;}
+  .vs-power{font-size:11px;color:var(--sub);}
+  .vs-mid{font-size:12px;color:var(--sub);font-weight:800;}
+  .reward-list{font-size:12px;margin:10px 0;color:var(--ink);line-height:1.8;}
+  .modal-close{
+    margin-top:6px;background:var(--accent);color:#08131f;border:none;
+    padding:10px 24px;border-radius:20px;font-family:inherit;font-weight:800;font-size:12px;
+  }
+
+  .toast{
+    position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
+    background:#1c2842;border:1px solid var(--line);color:var(--ink);
+    padding:9px 16px;border-radius:20px;font-size:12px;z-index:60;
+    opacity:0;transition:opacity 0.25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="frame">
+    <header>
+      <a class="home" href="../index.html" title="목록으로">←</a>
+      <h1>DRAGON <span>ISLAND</span></h1>
+      <div class="currency-bar">
+        <div class="cur gold"><div class="ico">💰</div><div id="curGold">0</div></div>
+        <div class="cur money"><div class="ico">💵</div><div id="curMoney">0</div></div>
+        <div class="cur gem"><div class="ico">💎</div><div id="curGem">0</div></div>
+        <div class="cur food"><div class="ico">🌾</div><div id="curFood">0</div></div>
+      </div>
+    </header>
+    <nav>
+      <button id="tabIslandBtn" class="active" onclick="switchTab('island')">🏝️ 아일랜드</button>
+      <button id="tabEggBtn" onclick="switchTab('egg')">🥚 알</button>
+      <button id="tabBattleBtn" onclick="switchTab('battle')">⚔️ 전투</button>
+    </nav>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---------- data ----------
+  var ELEMENTS = [
+    { id:'fire', label:'불', emoji:'🔥', color:'#ff6b4a' },
+    { id:'water', label:'물', emoji:'💧', color:'#4ab8ff' },
+    { id:'nature', label:'풀', emoji:'🌿', color:'#6fcf5a' },
+    { id:'electric', label:'전기', emoji:'⚡', color:'#ffd84a' },
+    { id:'dark', label:'어둠', emoji:'🌑', color:'#8b6fd6' },
+    { id:'light', label:'빛', emoji:'✨', color:'#ffe9a8' }
+  ];
+  var NAME_POOL = ['불꽃이','물방울','새싹이','번개','그림자','반짝이','루비','사파이어','에메랄드','토파즈','오닉스','스칼렛','노바','블레이즈','프로스트','템페스트'];
+  var WILD_NAMES = ['야생 드래곤','떠돌이 드래곤','수호 드래곤','고대 드래곤','전설의 드래곤'];
+
+  var state = {
+    gold: 1000000,
+    money: 5000,
+    gems: 50,
+    food: 0,
+    habitats: [],   // { id, dragonId }
+    farms: [],      // { id }
+    dragons: [],    // { id, name, element, level, xp, atk, hp, power, habitatId }
+    nextEggCostGold: 0,
+    nextEggCostMoney: 400,
+    nextEggCostGems: 15,
+    nextHabitatCostGold: 5000,
+    nextHabitatCostMoney: 2000,
+    nextHabitatCostGems: 40,
+    nextFarmCostGold: 4000,
+    nextFarmCostMoney: 1600,
+    nextFarmCostGems: 32,
+    currentTab: 'island',
+    battleLog: [],
+    hatching: false,
+    selectedTeam: [],   // 전투에 선택된 드래곤 id 배열 (최대 3)
+    battleActive: false,
+    enemy: null,        // { name, elementId, power, maxHp, hp }
+    attackedIds: []
+  };
+  var uid = 1;
+  function nextId(){ return uid++; }
+
+  // ---------- formatting ----------
+  function fmt(n){
+    n = Math.floor(n);
+    var sign = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    if(n >= 1e9) return sign + (n/1e9).toFixed(2) + 'B';
+    if(n >= 1e6) return sign + (n/1e6).toFixed(2) + 'M';
+    if(n >= 1e3) return sign + (n/1e3).toFixed(1) + 'K';
+    return sign + n.toString();
+  }
+
+  function getElement(id){
+    for(var i=0;i<ELEMENTS.length;i++){ if(ELEMENTS[i].id===id) return ELEMENTS[i]; }
+    return ELEMENTS[0];
+  }
+
+  // ---------- dragon logic ----------
+  function xpNeeded(level){ return level*40 + 60; }
+  function recalcStats(dragon){
+    dragon.atk = 10 + (dragon.level-1)*4;
+    dragon.hp = 50 + (dragon.level-1)*15;
+    dragon.power = dragon.atk*3 + dragon.hp;
+  }
+  function addXp(dragon, amt){
+    dragon.xp += amt;
+    var needed = xpNeeded(dragon.level);
+    while(dragon.xp >= needed){
+      dragon.xp -= needed;
+      dragon.level++;
+      recalcStats(dragon);
+      needed = xpNeeded(dragon.level);
+    }
+  }
+  function createDragon(){
+    var el = ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
+    var name = NAME_POOL[Math.floor(Math.random()*NAME_POOL.length)];
+    var dragon = {
+      id: nextId(), name: name, element: el.id,
+      level: 1, xp: 0, atk:0, hp:0, power:0, habitatId: null
+    };
+    recalcStats(dragon);
+    return dragon;
+  }
+  function autoAssignHabitat(dragon){
+    for(var i=0;i<state.habitats.length;i++){
+      if(state.habitats[i].dragonId === null){
+        state.habitats[i].dragonId = dragon.id;
+        dragon.habitatId = state.habitats[i].id;
+        return true;
+      }
+    }
+    return false;
+  }
+  function findDragon(id){
+    for(var i=0;i<state.dragons.length;i++){ if(state.dragons[i].id===id) return state.dragons[i]; }
+    return null;
+  }
+  function findHabitat(id){
+    for(var i=0;i<state.habitats.length;i++){ if(state.habitats[i].id===id) return state.habitats[i]; }
+    return null;
+  }
+
+  // ---------- purchases ----------
+  function buyEgg(currency){
+    if(state.hatching) return;
+    if(currency === 'money'){
+      var costM = state.nextEggCostMoney;
+      if(state.money < costM){ toast('돈이 부족해요'); return; }
+      state.money -= costM;
+      state.nextEggCostMoney = Math.round(costM*1.5);
+    } else if(currency === 'gems'){
+      var costG = state.nextEggCostGems;
+      if(state.gems < costG){ toast('보석이 부족해요'); return; }
+      state.gems -= costG;
+      state.nextEggCostGems = Math.round(costG*1.6);
+    } else {
+      var cost = state.nextEggCostGold;
+      if(state.gold < cost){ toast('골드가 부족해요'); return; }
+      state.gold -= cost;
+      state.nextEggCostGold = (cost === 0) ? 8000 : Math.round(cost*1.5);
+    }
+    hatchAnimation();
+  }
+  function hatchAnimation(){
+    state.hatching = true;
+    render();
+    var eggEl = document.getElementById('eggVisual');
+    if(eggEl) eggEl.classList.add('crack');
+    setTimeout(function(){
+      var dragon = createDragon();
+      state.dragons.push(dragon);
+      var placed = autoAssignHabitat(dragon);
+      state.hatching = false;
+      render();
+      toast((placed ? dragon.name + ' 부화! 서식지에 배치됐어요' : dragon.name + ' 부화! 빈 서식지가 없어 대기 중이에요'));
+    }, 650);
+  }
+  function buyHabitat(currency){
+    var spent = spendCurrency(currency, 'nextHabitatCostGold', 'nextHabitatCostMoney', 'nextHabitatCostGems', 1.4);
+    if(!spent) return;
+    var slot = { id: nextId(), dragonId: null };
+    state.habitats.push(slot);
+    // 대기 중인 드래곤이 있으면 자동 배치
+    for(var i=0;i<state.dragons.length;i++){
+      if(state.dragons[i].habitatId === null){
+        slot.dragonId = state.dragons[i].id;
+        state.dragons[i].habitatId = slot.id;
+        break;
+      }
+    }
+    render();
+  }
+  function buyFarm(currency){
+    var spent = spendCurrency(currency, 'nextFarmCostGold', 'nextFarmCostMoney', 'nextFarmCostGems', 1.4);
+    if(!spent) return;
+    state.farms.push({ id: nextId() });
+    render();
+  }
+  // 지정된 통화(gold/money/gems)로 비용을 지불하고 다음 비용을 올림. 성공 시 true 반환
+  function spendCurrency(currency, goldKey, moneyKey, gemsKey, growth){
+    if(currency === 'money'){
+      var costM = state[moneyKey];
+      if(state.money < costM){ toast('돈이 부족해요'); return false; }
+      state.money -= costM;
+      state[moneyKey] = Math.round(costM*growth);
+      return true;
+    } else if(currency === 'gems'){
+      var costG = state[gemsKey];
+      if(state.gems < costG){ toast('보석이 부족해요'); return false; }
+      state.gems -= costG;
+      state[gemsKey] = Math.round(costG*(growth+0.15));
+      return true;
+    } else {
+      var cost = state[goldKey];
+      if(state.gold < cost){ toast('골드가 부족해요'); return false; }
+      state.gold -= cost;
+      state[goldKey] = Math.round(cost*growth);
+      return true;
+    }
+  }
+  function assignAny(dragonId){
+    var dragon = findDragon(dragonId);
+    if(!dragon) return;
+    if(autoAssignHabitat(dragon)){
+      render();
+    } else {
+      toast('빈 서식지가 없어요! 서식지를 구매하세요');
+    }
+  }
+  function feedDragon(dragonId){
+    var dragon = findDragon(dragonId);
+    if(!dragon) return;
+    var cost = 15 + dragon.level*10;
+    if(state.food < cost){ toast('식량이 부족해요'); return; }
+    state.food -= cost;
+    addXp(dragon, 25);
+    render();
+  }
+  function trainDragon(dragonId){
+    var dragon = findDragon(dragonId);
+    if(!dragon) return;
+    var cost = Math.round(80 + dragon.level*40);
+    if(state.money < cost){ toast('돈이 부족해요'); return; }
+    state.money -= cost;
+    addXp(dragon, 40);
+    render();
+  }
+  function gemLevelUp(dragonId){
+    var dragon = findDragon(dragonId);
+    if(!dragon) return;
+    var cost = Math.round(3 + dragon.level*2);
+    if(state.gems < cost){ toast('보석이 부족해요'); return; }
+    state.gems -= cost;
+    dragon.level++;
+    recalcStats(dragon);
+    render();
+  }
+
+  // ---------- battle (team select) ----------
+  function toggleTeamSelect(id){
+    var idx = state.selectedTeam.indexOf(id);
+    if(idx >= 0){
+      state.selectedTeam.splice(idx,1);
+    } else {
+      if(state.selectedTeam.length >= 3){ toast('최대 3마리까지 선택할 수 있어요'); return; }
+      state.selectedTeam.push(id);
+    }
+    render();
+  }
+  function beginTeamBattle(){
+    if(state.selectedTeam.length === 0){ toast('전투에 참여할 드래곤을 선택하세요'); return; }
+    var teamPower = 0;
+    state.selectedTeam.forEach(function(id){
+      var d = findDragon(id);
+      if(d) teamPower += d.power;
+    });
+    var enemyPower = Math.round(teamPower * (0.4 + Math.random()*0.3));
+    var maxHp = Math.max(20, Math.round(teamPower * (0.35 + Math.random()*0.3)));
+    var enemyEl = ELEMENTS[Math.floor(Math.random()*ELEMENTS.length)];
+    state.enemy = {
+      name: WILD_NAMES[Math.floor(Math.random()*WILD_NAMES.length)],
+      elementId: enemyEl.id,
+      power: enemyPower,
+      maxHp: maxHp,
+      hp: maxHp
+    };
+    state.attackedIds = [];
+    state.battleActive = true;
+    render();
+  }
+  function performAttack(dragonId){
+    if(!state.battleActive || !state.enemy) return;
+    if(state.attackedIds.indexOf(dragonId) >= 0) return;
+    var dragon = findDragon(dragonId);
+    if(!dragon) return;
+    var dmg = Math.round(dragon.power * (0.85 + Math.random()*0.3));
+    state.enemy.hp = Math.max(0, state.enemy.hp - dmg);
+    state.attackedIds.push(dragonId);
+    render();
+    var enemyDead = state.enemy.hp <= 0;
+    var allAttacked = state.attackedIds.length >= state.selectedTeam.length;
+    if(enemyDead || allAttacked){
+      setTimeout(function(){ endTeamBattle(enemyDead); }, 400);
+    }
+  }
+  function endTeamBattle(win){
+    var enemy = state.enemy;
+    var participants = state.selectedTeam.map(findDragon).filter(function(d){ return d; });
+    var rewardMoney = 0, rewardGems = 0;
+    if(win){
+      rewardMoney = Math.round(enemy.power*3 + Math.random()*enemy.power*2);
+      rewardGems = Math.round(enemy.power*0.05) + 1;
+      state.money += rewardMoney;
+      state.gems += rewardGems;
+    }
+    var xpEach = win ? (Math.round(enemy.power*0.3) + 15) : 8;
+    participants.forEach(function(d){ addXp(d, xpEach); });
+    state.battleLog.unshift({
+      win: win,
+      dragonName: participants.map(function(d){ return d.name; }).join(', ') || '팀',
+      enemyName: enemy.name, enemyPower: enemy.power,
+      rewardMoney: rewardMoney, rewardGems: rewardGems, rewardXp: xpEach
+    });
+    if(state.battleLog.length > 20) state.battleLog.length = 20;
+    showTeamBattleResult(participants, enemy, win, rewardMoney, rewardGems, xpEach);
+    state.battleActive = false;
+    state.enemy = null;
+    state.attackedIds = [];
+    state.selectedTeam = [];
+    render();
+  }
+  function showTeamBattleResult(participants, enemy, win, rewardMoney, rewardGems, xpEach){
+    var enemyEl = getElement(enemy.elementId);
+    var teamIcons = participants.map(function(d){
+      var el = getElement(d.element);
+      return '<span style="margin:0 3px">' + el.emoji + '🐉</span>';
+    }).join('');
+    var box = document.getElementById('modalBox');
+    box.innerHTML =
+      '<div class="modal-title ' + (win?'win':'lose') + '">' + (win ? '🏆 승리!' : '💥 패배...') + '</div>' +
+      '<div class="vs-row">' +
+        '<div><div class="vs-side">' + teamIcons + '</div><div class="vs-power">우리 팀</div></div>' +
+        '<div class="vs-mid">VS</div>' +
+        '<div><div class="vs-side">' + enemyEl.emoji + '🐲</div><div class="vs-power">' + enemy.name + '<br>파워 ' + enemy.power + '</div></div>' +
+      '</div>' +
+      '<div class="reward-list">' +
+        (win ? ('💵 +' + fmt(rewardMoney) + '&nbsp;&nbsp;💎 +' + fmt(rewardGems) + '<br>') : '') +
+        '✨ 참여 드래곤 각각 경험치 +' + xpEach +
+      '</div>' +
+      '<button class="modal-close" onclick="closeModal()">확인</button>';
+    document.getElementById('modalOverlay').classList.add('show');
+  }
+
+  // ---------- drag-to-attack ----------
+  var dragState = null;
+  function attachDragHandlers(){
+    var icons = document.querySelectorAll('.atk-icon:not(.used)');
+    icons.forEach(function(icon){
+      icon.addEventListener('pointerdown', onDragStart);
+    });
+  }
+  function onDragStart(e){
+    var icon = e.currentTarget;
+    if(icon.classList.contains('used')) return;
+    e.preventDefault();
+    var rect = icon.getBoundingClientRect();
+    dragState = {
+      icon: icon,
+      dragonId: parseInt(icon.getAttribute('data-dragon-id'), 10),
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top
+    };
+    try { icon.setPointerCapture(e.pointerId); } catch(err){}
+    icon.style.position = 'fixed';
+    icon.style.left = rect.left + 'px';
+    icon.style.top = rect.top + 'px';
+    icon.style.width = rect.width + 'px';
+    icon.style.zIndex = '40';
+    icon.classList.add('dragging');
+    icon.addEventListener('pointermove', onDragMove);
+    icon.addEventListener('pointerup', onDragEnd);
+    icon.addEventListener('pointercancel', onDragEnd);
+  }
+  function onDragMove(e){
+    if(!dragState) return;
+    var icon = dragState.icon;
+    icon.style.left = (e.clientX - dragState.offsetX) + 'px';
+    icon.style.top = (e.clientY - dragState.offsetY) + 'px';
+    var dropZone = document.getElementById('enemyDropZone');
+    if(dropZone){
+      var dz = dropZone.getBoundingClientRect();
+      var over = (e.clientX >= dz.left && e.clientX <= dz.right && e.clientY >= dz.top && e.clientY <= dz.bottom);
+      dropZone.classList.toggle('drop-hover', over);
+    }
+  }
+  function onDragEnd(e){
+    if(!dragState) return;
+    var icon = dragState.icon;
+    var dropZone = document.getElementById('enemyDropZone');
+    var hit = false;
+    if(dropZone){
+      var dz = dropZone.getBoundingClientRect();
+      hit = (e.clientX >= dz.left && e.clientX <= dz.right && e.clientY >= dz.top && e.clientY <= dz.bottom);
+      dropZone.classList.remove('drop-hover');
+    }
+    icon.removeEventListener('pointermove', onDragMove);
+    icon.removeEventListener('pointerup', onDragEnd);
+    icon.removeEventListener('pointercancel', onDragEnd);
+    icon.classList.remove('dragging');
+    var dragonId = dragState.dragonId;
+    dragState = null;
+    if(hit){
+      performAttack(dragonId);
+    } else {
+      icon.style.position = '';
+      icon.style.left = '';
+      icon.style.top = '';
+      icon.style.width = '';
+      icon.style.zIndex = '';
+    }
+  }
+  function closeModal(){
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+
+  // ---------- toast ----------
+  var toastTimer = null;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  // ---------- tabs ----------
+  function switchTab(tab){
+    state.currentTab = tab;
+    document.getElementById('tabIslandBtn').classList.toggle('active', tab==='island');
+    document.getElementById('tabEggBtn').classList.toggle('active', tab==='egg');
+    document.getElementById('tabBattleBtn').classList.toggle('active', tab==='battle');
+    render();
+  }
+
+  // ---------- render ----------
+  function render(){
+    document.getElementById('curGold').textContent = fmt(state.gold);
+    document.getElementById('curMoney').textContent = fmt(state.money);
+    document.getElementById('curGem').textContent = fmt(state.gems);
+    document.getElementById('curFood').textContent = fmt(state.food);
+
+    var content = document.getElementById('content');
+    if(state.currentTab === 'island') content.innerHTML = renderIsland();
+    else if(state.currentTab === 'egg') content.innerHTML = renderEgg();
+    else content.innerHTML = renderBattle();
+
+    if(state.currentTab === 'battle' && state.battleActive){
+      attachDragHandlers();
+    }
+  }
+
+  function dragonCardHtml(dragon){
+    var el = getElement(dragon.element);
+    var needed = xpNeeded(dragon.level);
+    var pct = Math.min(100, Math.round(dragon.xp/needed*100));
+    var feedCost = 15 + dragon.level*10;
+    var trainCost = Math.round(80 + dragon.level*40);
+    var gemCost = Math.round(3 + dragon.level*2);
+    var incomeHtml = dragon.habitatId
+      ? '<div class="dc-income">+' + fmt(dragon.power*0.08) + '/초 💵 &nbsp;+' + (dragon.power*0.003).toFixed(2) + '/초 💎</div>'
+      : '';
+    var assignBtn = dragon.habitatId ? '' : '<button class="mini-btn" onclick="assignAny(' + dragon.id + ')">🏠 서식지 배치</button>';
+    var battleBadge = dragon.level >= 4
+      ? '<span class="badge">전투가능</span>'
+      : '<span class="badge dim">전투 Lv4부터</span>';
+    return (
+      '<div class="dragon-card" style="--dc:' + el.color + '">' +
+        '<div class="dc-icon">🐉<span class="badge-el">' + el.emoji + '</span></div>' +
+        '<div class="dc-info">' +
+          '<div class="dc-name">' + dragon.name + ' <span class="dc-lv">Lv.' + dragon.level + '</span></div>' +
+          '<div class="dc-xpbar"><div class="dc-xpfill" style="width:' + pct + '%"></div></div>' +
+          '<div class="dc-stats">⚔️' + dragon.atk + ' ❤️' + dragon.hp + ' &nbsp;파워 ' + dragon.power + '</div>' +
+          incomeHtml +
+          '<div class="dc-actions">' +
+            '<button class="mini-btn" ' + (state.food < feedCost ? 'disabled' : '') + ' onclick="feedDragon(' + dragon.id + ')">🌾 먹이 (-' + feedCost + ')</button>' +
+            '<button class="mini-btn" ' + (state.money < trainCost ? 'disabled' : '') + ' onclick="trainDragon(' + dragon.id + ')">💵 훈련 (-' + trainCost + ')</button>' +
+            '<button class="mini-btn" ' + (state.gems < gemCost ? 'disabled' : '') + ' onclick="gemLevelUp(' + dragon.id + ')">💎 즉시레벨업 (-' + gemCost + ')</button>' +
+            assignBtn +
+            battleBadge +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function buyCardHtml(title, emoji, goldKey, moneyKey, gemsKey, buyFn){
+    var canGold = state.gold >= state[goldKey];
+    var canMoney = state.money >= state[moneyKey];
+    var canGems = state.gems >= state[gemsKey];
+    return (
+      '<div class="buy-card">' +
+        '<div class="bt-label">' + emoji + ' ' + title + '</div>' +
+        '<div class="buy-card-row">' +
+          '<button class="mini-btn" ' + (canGold?'':'disabled') + ' onclick="' + buyFn + '(\'gold\')">💰 ' + fmt(state[goldKey]) + '</button>' +
+          '<button class="mini-btn" ' + (canMoney?'':'disabled') + ' onclick="' + buyFn + '(\'money\')">💵 ' + fmt(state[moneyKey]) + '</button>' +
+          '<button class="mini-btn" ' + (canGems?'':'disabled') + ' onclick="' + buyFn + '(\'gems\')">💎 ' + fmt(state[gemsKey]) + '</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderIsland(){
+    var html = '';
+    html += '<div class="section-title">건물 구매</div>';
+    html += buyCardHtml('서식지 구매', '🏠', 'nextHabitatCostGold', 'nextHabitatCostMoney', 'nextHabitatCostGems', 'buyHabitat');
+    html += buyCardHtml('농장 구매', '🌾', 'nextFarmCostGold', 'nextFarmCostMoney', 'nextFarmCostGems', 'buyFarm');
+
+    html += '<div class="section-title">서식지 (' + state.habitats.length + ')</div>';
+    if(state.habitats.length === 0){
+      html += '<div class="empty-msg">아직 서식지가 없어요. 위에서 구매해보세요!</div>';
+    } else {
+      var emptySlots = 0;
+      for(var i=0;i<state.habitats.length;i++){
+        if(state.habitats[i].dragonId === null) emptySlots++;
+        else {
+          var d = findDragon(state.habitats[i].dragonId);
+          if(d) html += dragonCardHtml(d);
+        }
+      }
+      if(emptySlots > 0){
+        html += '<div class="slot-grid">';
+        for(var j=0;j<emptySlots;j++){
+          html += '<div class="slot-empty">빈 서식지<br>드래곤을 부화시켜 배치하세요</div>';
+        }
+        html += '</div>';
+      }
+    }
+
+    var idleDragons = state.dragons.filter(function(d){ return d.habitatId === null; });
+    if(idleDragons.length > 0){
+      html += '<div class="section-title">대기 중인 드래곤 (' + idleDragons.length + ')</div>';
+      idleDragons.forEach(function(d){ html += dragonCardHtml(d); });
+    }
+
+    html += '<div class="section-title">농장 (' + state.farms.length + ')</div>';
+    if(state.farms.length === 0){
+      html += '<div class="empty-msg">농장이 없어요. 농장을 지어 식량을 모아보세요!</div>';
+    } else {
+      html += '<div class="empty-msg" style="text-align:left">🌾 농장 ' + state.farms.length + '개 · 초당 +' + (state.farms.length*3) + ' 식량 생산 중</div>';
+    }
+    return html;
+  }
+
+  function renderEgg(){
+    var goldLabel = state.nextEggCostGold === 0 ? '무료!' : ('💰 ' + fmt(state.nextEggCostGold));
+    var canBuyGold = state.gold >= state.nextEggCostGold && !state.hatching;
+    var canBuyMoney = state.money >= state.nextEggCostMoney && !state.hatching;
+    var canBuyGems = state.gems >= state.nextEggCostGems && !state.hatching;
+    var html = '';
+    html += '<div class="egg-zone">';
+    html += '<div class="egg-visual" id="eggVisual">' + (state.hatching ? '🥚' : '🥚') + '</div>';
+    html += '<div class="egg-hint">원하는 재화로 알을 부화시켜 새로운 드래곤을 얻으세요</div>';
+    html += '<div class="buy-row">';
+    html += '<button class="buy-btn" ' + (canBuyGold?'':'disabled') + ' onclick="buyEgg(\'gold\')"><div class="bt-label">💰 골드로 부화</div><div class="bt-cost">' + goldLabel + '</div></button>';
+    html += '<button class="buy-btn" ' + (canBuyMoney?'':'disabled') + ' onclick="buyEgg(\'money\')"><div class="bt-label">💵 돈으로 부화</div><div class="bt-cost">' + fmt(state.nextEggCostMoney) + '</div></button>';
+    html += '<button class="buy-btn" ' + (canBuyGems?'':'disabled') + ' onclick="buyEgg(\'gems\')"><div class="bt-label">💎 보석으로 부화</div><div class="bt-cost">' + fmt(state.nextEggCostGems) + '</div></button>';
+    html += '</div>';
+    if(state.hatching) html += '<div class="egg-hint">부화 중...</div>';
+    html += '</div>';
+    html += '<div class="section-title">보유 드래곤 (' + state.dragons.length + ')</div>';
+    if(state.dragons.length === 0){
+      html += '<div class="empty-msg">아직 드래곤이 없어요. 알을 부화시켜보세요!</div>';
+    } else {
+      state.dragons.forEach(function(d){ html += dragonCardHtml(d); });
+    }
+    return html;
+  }
+
+  function renderBattle(){
+    if(state.battleActive && state.enemy) return renderBattleArena();
+    return renderTeamSelect();
+  }
+
+  function renderTeamSelect(){
+    var html = '';
+    var battleReady = state.dragons.filter(function(d){ return d.level >= 4; });
+    html += '<div class="section-title">전투 팀 선택 (최대 3마리)</div>';
+    if(battleReady.length === 0){
+      html += '<div class="empty-msg">Lv.4 이상의 드래곤이 있어야 전투할 수 있어요.<br>먹이를 줘서 드래곤을 성장시켜보세요!</div>';
+    } else {
+      battleReady.forEach(function(d){
+        var el = getElement(d.element);
+        var selected = state.selectedTeam.indexOf(d.id) >= 0;
+        html += '<div class="battle-row" style="cursor:pointer;' + (selected ? 'border-color:var(--accent);background:#1f3350;' : '') + '" onclick="toggleTeamSelect(' + d.id + ')">' +
+          '<div class="dc-icon" style="--dc:' + el.color + '">🐉<span class="badge-el">' + el.emoji + '</span></div>' +
+          '<div style="flex:1">' +
+            '<div class="dc-name">' + d.name + ' <span class="dc-lv">Lv.' + d.level + '</span></div>' +
+            '<div class="dc-stats">파워 ' + d.power + '</div>' +
+          '</div>' +
+          (selected ? '<span class="badge">선택됨</span>' : '') +
+        '</div>';
+      });
+      html += '<button class="hatch-btn" style="width:100%;margin:10px 0;" ' + (state.selectedTeam.length===0?'disabled':'') + ' onclick="beginTeamBattle()">⚔️ 전투 시작 (' + state.selectedTeam.length + '/3)</button>';
+    }
+    html += '<div class="section-title">전투 기록</div>';
+    if(state.battleLog.length === 0){
+      html += '<div class="empty-msg">아직 전투 기록이 없어요</div>';
+    } else {
+      state.battleLog.forEach(function(log){
+        html += '<div class="battle-log-item ' + (log.win?'win':'lose') + '">' +
+          '<b>' + log.dragonName + '</b> vs ' + log.enemyName + ' (파워 ' + log.enemyPower + ') — ' +
+          (log.win ? ('승리! 💵+' + fmt(log.rewardMoney) + ' 💎+' + fmt(log.rewardGems)) : '패배') +
+        '</div>';
+      });
+    }
+    return html;
+  }
+
+  function renderBattleArena(){
+    var enemy = state.enemy;
+    var enemyEl = getElement(enemy.elementId);
+    var hpPct = Math.max(0, Math.round(enemy.hp/enemy.maxHp*100));
+    var html = '';
+    html += '<div class="battle-arena">';
+    html += '<div class="enemy-zone" id="enemyDropZone">';
+    html += '<div class="enemy-visual">' + enemyEl.emoji + '🐲</div>';
+    html += '<div class="dc-name" style="text-align:center">' + enemy.name + '</div>';
+    html += '<div class="enemy-hpbar"><div class="enemy-hpfill" style="width:' + hpPct + '%"></div></div>';
+    html += '<div class="enemy-hptext">HP ' + enemy.hp + ' / ' + enemy.maxHp + '</div>';
+    html += '</div>';
+    html += '<div class="battle-hint">🐉 드래곤을 위쪽 적에게 드래그해서 공격하세요!</div>';
+    html += '<div class="team-row" id="teamRow">';
+    state.selectedTeam.forEach(function(id){
+      var d = findDragon(id);
+      if(!d) return;
+      var el = getElement(d.element);
+      var used = state.attackedIds.indexOf(id) >= 0;
+      html += '<div class="atk-icon ' + (used?'used':'') + '" data-dragon-id="' + id + '" style="--dc:' + el.color + '">' +
+        '<div class="atk-emoji">' + el.emoji + '🐉</div>' +
+        '<div class="atk-name">' + d.name + '</div>' +
+        '<div class="atk-power">파워 ' + d.power + '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- game tick (idle income) ----------
+  function tick(){
+    var totalPower = 0;
+    for(var i=0;i<state.dragons.length;i++){
+      if(state.dragons[i].habitatId !== null) totalPower += state.dragons[i].power;
+    }
+    state.money += totalPower * 0.08;
+    state.gems += totalPower * 0.003;
+    state.food += state.farms.length * 3;
+    render();
+  }
+  setInterval(tick, 1000);
+
+  // ---------- init ----------
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "minigames",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "브라우저에서 바로 즐기는 작은 게임 모음",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

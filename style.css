@@ -49,6 +49,17 @@ header.hero {
   font-size: 17px;
 }
 
+.group {
+  margin: 40px 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.group:first-child { margin-top: 0; }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -73,7 +84,7 @@ header.hero {
 }
 
 .card .emoji { font-size: 34px; display: block; margin-bottom: 10px; }
-.card h2 { margin: 0 0 6px; font-size: 19px; }
+.card h3 { margin: 0 0 6px; font-size: 19px; }
 .card p { margin: 0; color: var(--muted); font-size: 14px; }
 
 footer {

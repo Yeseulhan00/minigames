@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>무궁화 꽃이 피었습니다</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0f;
+    --track: #16161d;
+    --track-line: #232330;
+    --pink: #ff2f6e;
+    --pink-dim: #7a1a3a;
+    --green: #4fffa0;
+    --red: #ff3b4e;
+    --cream: #f2ece1;
+    --gray: #8a8a97;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; }
+  html,body{ margin:0; height:100%; background:var(--bg); overflow:hidden; }
+  body{
+    font-family:'Noto Sans KR', sans-serif;
+    color:var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    height:100vh; width:100vw;
+  }
+
+  .stage{
+    position:relative;
+    width:min(480px, 100vw);
+    height:min(860px, 100vh);
+    display:flex;
+    flex-direction:column;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(255,47,110,0.10), transparent 60%),
+      var(--bg);
+    overflow:hidden;
+  }
+
+  /* ---------- HUD ---------- */
+  .hud{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+    padding:18px 20px 10px;
+    z-index:5;
+  }
+  .hud .home{
+    flex:none;
+    color:var(--gray); text-decoration:none;
+    font-size:18px; line-height:1;
+    padding:4px 8px;
+    border:1px solid var(--track-line); border-radius:6px;
+  }
+  .hud .home:hover{ color:var(--cream); border-color:var(--pink); }
+  .hud .title{
+    font-family:'Black Han Sans', sans-serif;
+    font-size:20px;
+    letter-spacing:1px;
+    color:var(--cream);
+    text-shadow: 0 0 18px rgba(255,47,110,0.35);
+  }
+  .hud .title span{ color: var(--pink); }
+  .timer{
+    font-family:'Space Mono', monospace;
+    font-size:22px;
+    font-weight:700;
+    padding:4px 12px;
+    border:1px solid var(--track-line);
+    border-radius:6px;
+    background:rgba(255,255,255,0.02);
+    min-width:64px;
+    text-align:center;
+  }
+  .timer.warn{ color:var(--red); border-color:var(--red); }
+  .hud-right{ display:flex; align-items:center; gap:8px; }
+  .survivors{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--gray);
+    padding:4px 10px;
+    border:1px solid var(--track-line);
+    border-radius:6px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Light state banner ---------- */
+  .light-banner{
+    display:flex; align-items:center; justify-content:center;
+    gap:10px;
+    padding:6px 0 2px;
+    z-index:5;
+  }
+  .light-dot{
+    width:12px; height:12px; border-radius:50%;
+    background:var(--green);
+    box-shadow: 0 0 14px 3px rgba(79,255,160,0.8);
+    transition: background .15s, box-shadow .15s;
+  }
+  .light-dot.red{
+    background:var(--red);
+    box-shadow: 0 0 16px 4px rgba(255,59,78,0.9);
+  }
+  .light-label{
+    font-family:'Black Han Sans', sans-serif;
+    font-size:22px;
+    letter-spacing:2px;
+    color:var(--green);
+    transition:color .15s;
+  }
+  .light-label.red{ color:var(--red); }
+
+  /* ---------- Track ---------- */
+  .track-wrap{
+    position:relative;
+    flex:1;
+    margin:6px 16px 0;
+    border-radius:14px;
+    overflow:hidden;
+    background:
+      linear-gradient(180deg, rgba(255,47,110,0.06), transparent 30%),
+      var(--track);
+    border:1px solid var(--track-line);
+  }
+
+  .doll-zone{
+    position:relative;
+    height:26%;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35), transparent);
+    border-bottom:2px dashed var(--track-line);
+  }
+
+  .doll{
+    position:relative;
+    width:88px; height:120px;
+    display:flex; flex-direction:column; align-items:center;
+    transition: filter .2s;
+  }
+  .doll-head{
+    width:52px; height:52px; border-radius:50%;
+    background: linear-gradient(160deg, #e7c9a9, #d4a97e);
+    position:relative;
+    box-shadow: inset -6px -6px 10px rgba(0,0,0,0.25);
+  }
+  .doll-bun{
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    width:16px; height:16px; border-radius:50%;
+    background:#3a2a1e;
+  }
+  .doll-pig{
+    position:absolute; top:8px; width:10px; height:22px; border-radius:6px;
+    background:#3a2a1e;
+  }
+  .doll-pig.l{ left:-8px; transform:rotate(-18deg); }
+  .doll-pig.r{ right:-8px; transform:rotate(18deg); }
+  .doll-eye{
+    position:absolute; top:22px; width:6px; height:6px; border-radius:50%;
+    background:#2a1c14; opacity:0; transition: opacity .12s, box-shadow .12s, background .12s;
+  }
+  .doll-eye.l{ left:14px; } .doll-eye.r{ right:14px; }
+  .doll-mouth{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    width:14px; height:6px; border-radius:0 0 10px 10px;
+    background:#b5473f; opacity:0; transition:opacity .12s;
+  }
+  .doll-body{
+    margin-top:-4px;
+    width:70px; height:58px;
+    border-radius:16px 16px 8px 8px;
+    background: linear-gradient(160deg, var(--pink), #b3184e);
+    box-shadow: inset -8px -8px 14px rgba(0,0,0,0.3);
+  }
+
+  /* RED = facing you, eyes glow, whole doll pulses */
+  .stage.red-light .doll-eye{ opacity:1; background:#ff2b2b; box-shadow:0 0 8px 2px rgba(255,43,43,0.9); }
+  .stage.red-light .doll-mouth{ opacity:1; }
+  .stage.red-light .doll{ filter: drop-shadow(0 0 14px rgba(255,59,78,0.55)); animation: dollSnap .18s ease-out; }
+  @keyframes dollSnap{ 0%{ transform:scale(0.9);} 60%{ transform:scale(1.05);} 100%{ transform:scale(1);} }
+
+  /* GREEN = facing away, gentle bob (chanting) */
+  .stage.green-light .doll{ animation: dollBob 0.5s ease-in-out infinite alternate; }
+  @keyframes dollBob{ from{ transform:translateY(0) rotate(-1.5deg);} to{ transform:translateY(-3px) rotate(1.5deg);} }
+
+  .finish-strip{
+    position:absolute; bottom:0; left:0; right:0; height:8px;
+    background: repeating-linear-gradient(90deg, var(--cream) 0 10px, #1a1a22 10px 20px);
+    opacity:0.85;
+  }
+
+  .lane{
+    position:relative;
+    height:74%;
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 34px);
+  }
+  .lane .markers{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:8px 10px;
+    pointer-events:none;
+  }
+  .lane .markers span{
+    font-family:'Space Mono', monospace;
+    font-size:10px; color:var(--gray); opacity:0.5;
+  }
+
+  .player{
+    position:absolute;
+    left:50%;
+    bottom:4%;
+    width:26px; height:26px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ffe1ea, var(--pink));
+    box-shadow: 0 0 14px rgba(255,47,110,0.7), 0 4px 10px rgba(0,0,0,0.5);
+    transform: translate(-50%, 0);
+    transition: bottom 0.05s linear;
+    z-index:3;
+  }
+  .player::after{
+    content:'';
+    position:absolute; inset:5px;
+    border-radius:50%;
+    background: rgba(0,0,0,0.15);
+  }
+  .player.moving{ animation: playerPulse .3s ease-in-out infinite alternate; }
+  @keyframes playerPulse{ from{ transform:translate(-50%,0) scale(1);} to{ transform:translate(-50%,0) scale(1.12);} }
+  .player.caught{
+    background: radial-gradient(circle at 35% 30%, #fff, var(--red));
+    box-shadow: 0 0 22px rgba(255,59,78,0.95);
+  }
+
+  .stage.red-light .lane{
+    box-shadow: inset 0 0 0 2px rgba(255,59,78,0.35);
+  }
+
+  .npcs{ position:absolute; inset:0; z-index:2; pointer-events:none; }
+  .npc{
+    position:absolute;
+    width:16px; height:16px;
+    border-radius:50%;
+    transform:translate(-50%, 0);
+    transition: bottom 0.05s linear, background .2s, opacity .3s;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  }
+  .npc.moving{ animation: npcPulse .35s ease-in-out infinite alternate; }
+  @keyframes npcPulse{ from{ transform:translate(-50%,0) scale(1);} to{ transform:translate(-50%,0) scale(1.1);} }
+  .npc.out{
+    background:#3a3a44 !important;
+    opacity:0.55;
+    box-shadow:none;
+    animation:none;
+  }
+  .npc.finished{
+    box-shadow: 0 0 10px 2px rgba(255,214,102,0.8);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    padding:16px 20px 22px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    z-index:5;
+  }
+  #holdBtn{
+    width:100%;
+    max-width:360px;
+    padding:18px 0;
+    border-radius:14px;
+    border:none;
+    background: linear-gradient(180deg, var(--pink), #b3184e);
+    color:#fff;
+    font-family:'Black Han Sans', sans-serif;
+    font-size:20px;
+    letter-spacing:1px;
+    box-shadow: 0 8px 0 var(--pink-dim), 0 10px 20px rgba(255,47,110,0.25);
+    transition: transform .06s, box-shadow .06s;
+  }
+  #holdBtn:active, #holdBtn.pressed{
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 var(--pink-dim), 0 4px 10px rgba(255,47,110,0.25);
+  }
+  #holdBtn:disabled{ opacity:0.4; }
+  .hint{ font-size:12px; color:var(--gray); text-align:center; margin:0; }
+  .hint b{ color:var(--cream); }
+
+  /* ---------- Overlay ---------- */
+  .overlay{
+    position:absolute; inset:0;
+    background: rgba(5,5,8,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; text-align:center; padding:30px;
+    z-index:10;
+    opacity:1; transition: opacity .25s;
+  }
+  .overlay.hidden{ opacity:0; pointer-events:none; }
+  .overlay .big{
+    font-family:'Black Han Sans', sans-serif;
+    font-size:34px;
+    letter-spacing:1px;
+  }
+  .overlay.win .big{ color:var(--green); text-shadow:0 0 24px rgba(79,255,160,0.5); }
+  .overlay.lose .big{ color:var(--red); text-shadow:0 0 24px rgba(255,59,78,0.5); }
+  .overlay p{ color:var(--gray); font-size:14px; max-width:300px; line-height:1.6; margin:0; }
+  .overlay button{
+    margin-top:8px;
+    padding:14px 34px;
+    border-radius:12px;
+    border:1px solid var(--track-line);
+    background:var(--pink);
+    color:#fff;
+    font-family:'Noto Sans KR', sans-serif;
+    font-weight:700;
+    font-size:15px;
+  }
+  .overlay .symbols{
+    display:flex; gap:14px; font-size:22px; color:var(--pink); opacity:0.8;
+  }
+
+  .flash{
+    position:absolute; inset:0; background:var(--red);
+    opacity:0; pointer-events:none; z-index:9;
+  }
+  .flash.active{ animation: flashHit .35s ease-out; }
+  @keyframes flashHit{ 0%{opacity:0.55;} 100%{opacity:0;} }
+</style>
+</head>
+<body>
+  <div class="stage green-light" id="stage">
+
+    <div class="hud">
+      <a class="home" href="../index.html" title="목록으로">←</a>
+      <div class="title">무궁화 꽃이 <span>피었습니다</span></div>
+      <div class="hud-right">
+        <div class="survivors" id="survivors">생존 9명</div>
+        <div class="timer" id="timer">45</div>
+      </div>
+    </div>
+
+    <div class="light-banner">
+      <div class="light-dot" id="lightDot"></div>
+      <div class="light-label" id="lightLabel">초록불 · 전진</div>
+    </div>
+
+    <div class="track-wrap">
+      <div class="doll-zone">
+        <div class="doll" id="doll">
+          <div class="doll-head">
+            <div class="doll-bun"></div>
+            <div class="doll-pig l"></div>
+            <div class="doll-pig r"></div>
+            <div class="doll-eye l"></div>
+            <div class="doll-eye r"></div>
+            <div class="doll-mouth"></div>
+          </div>
+          <div class="doll-body"></div>
+        </div>
+        <div class="finish-strip"></div>
+      </div>
+      <div class="lane">
+        <div class="markers">
+          <span>도착</span><span>75</span><span>50</span><span>25</span><span>출발</span>
+        </div>
+        <div class="npcs" id="npcs"></div>
+        <div class="player" id="player"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="holdBtn">누르고 있으면 전진</button>
+      <p class="hint">버튼을 <b>꾹 누르고 있으면</b> 전진합니다 · 스페이스바도 가능<br><b>빨간불</b>일 때 움직이면 탈락!</p>
+    </div>
+
+    <div class="flash" id="flash"></div>
+
+    <div class="overlay" id="overlay">
+      <div class="symbols">○ △ □</div>
+      <div class="big">무궁화 꽃이<br>피었습니다</div>
+      <p>초록불에는 버튼을 눌러 전진하고, 빨간불에는 손을 떼고 완전히 멈추세요.<br>제한 시간 안에 도착선까지 가면 생존입니다.</p>
+      <button id="startBtn">게임 시작</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const player = document.getElementById('player');
+  const lane = document.querySelector('.lane');
+  const holdBtn = document.getElementById('holdBtn');
+  const lightDot = document.getElementById('lightDot');
+  const lightLabel = document.getElementById('lightLabel');
+  const timerEl = document.getElementById('timer');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const flash = document.getElementById('flash');
+  const npcsEl = document.getElementById('npcs');
+  const survivorsEl = document.getElementById('survivors');
+
+  const TOTAL_TIME = 45;
+  const SPEED = 26; // % progress per second while moving
+
+  const NPC_COLORS = ['#8fd3ff','#ffd666','#c9a7ff','#7fffd4','#ff9e7f','#a0e57a','#ffb3d9','#9fb8ff'];
+  const NPC_POSITIONS = [10, 22, 34, 42, 58, 66, 78, 90]; // left % across the lane
+
+  let progress = 0;       // 0 -> 100 (100 = reached doll)
+  let holding = false;
+  let phase = 'idle';     // 'idle' | 'green' | 'red' | 'ended'
+  let timeLeft = TOTAL_TIME;
+  let lastFrame = null;
+  let rafId = null;
+  let lightTimeoutId = null;
+  let secondIntervalId = null;
+  let npcs = [];
+
+  function setLane(){
+    const laneH = lane.clientHeight;
+    const playerH = player.clientHeight;
+    const usable = laneH - playerH - 10;
+    const bottom = 10 + (progress/100) * usable;
+    player.style.bottom = bottom + 'px';
+    npcs.forEach(placeNpc);
+  }
+
+  function placeNpc(npc){
+    const laneH = lane.clientHeight;
+    const usable = laneH - 16 - 10;
+    const bottom = 10 + (npc.progress/100) * usable;
+    npc.el.style.bottom = bottom + 'px';
+  }
+
+  function createNpcs(){
+    npcsEl.innerHTML = '';
+    npcs = NPC_POSITIONS.map((left, i)=>{
+      const el = document.createElement('div');
+      el.className = 'npc';
+      el.style.left = left + '%';
+      el.style.background = NPC_COLORS[i % NPC_COLORS.length];
+      npcsEl.appendChild(el);
+      return {
+        el,
+        progress: 0,
+        speed: 14 + Math.random()*16,   // % per second, slower/faster than player
+        alive: true,
+        finished: false,
+        catchChance: 0.22 + Math.random()*0.28  // risk of getting caught per red light
+      };
+    });
+    npcs.forEach(placeNpc);
+    updateSurvivorCount();
+  }
+
+  function updateSurvivorCount(){
+    const aliveNpcs = npcs.filter(n=>n.alive).length;
+    const playerAlive = phase !== 'ended' || progress >= 100;
+    const total = aliveNpcs + (playerAlive ? 1 : 0);
+    survivorsEl.textContent = `생존 ${total}명`;
+  }
+
+  function updateNpcs(dt){
+    npcs.forEach(npc=>{
+      if(!npc.alive || npc.finished) return;
+      if(phase === 'green'){
+        npc.progress += npc.speed * dt;
+        npc.el.classList.add('moving');
+        if(npc.progress >= 100){
+          npc.progress = 100;
+          npc.finished = true;
+          npc.el.classList.remove('moving');
+          npc.el.classList.add('finished');
+        }
+        placeNpc(npc);
+      }
+    });
+  }
+
+  function judgeNpcsAtRedLight(){
+    npcs.forEach(npc=>{
+      if(!npc.alive || npc.finished) return;
+      npc.el.classList.remove('moving');
+      if(Math.random() < npc.catchChance){
+        npc.alive = false;
+        npc.el.classList.add('out');
+      }
+    });
+    updateSurvivorCount();
+  }
+
+  function setLight(state){
+    phase = state;
+    stage.classList.remove('green-light','red-light');
+    if(state === 'green'){
+      stage.classList.add('green-light');
+      lightDot.classList.remove('red');
+      lightLabel.classList.remove('red');
+      lightLabel.textContent = '초록불 · 전진';
+    } else if(state === 'red'){
+      stage.classList.add('red-light');
+      lightDot.classList.add('red');
+      lightLabel.classList.add('red');
+      lightLabel.textContent = '빨간불 · 정지';
+      judgeNpcsAtRedLight();
+      // if the player was mid-move when the light flips, they're caught
+      if(holding){
+        eliminate('빨간불에 움직였습니다');
+      }
+    }
+  }
+
+  function scheduleNextLight(){
+    if(phase === 'ended') return;
+    const isGreen = phase === 'green';
+    const duration = isGreen
+      ? (1400 + Math.random()*1800)   // green light length
+      : (1000 + Math.random()*1400);  // red light length
+    lightTimeoutId = setTimeout(()=>{
+      setLight(isGreen ? 'red' : 'green');
+      scheduleNextLight();
+    }, duration);
+  }
+
+  function eliminate(reason){
+    if(phase === 'ended') return;
+    phase = 'ended';
+    clearTimeout(lightTimeoutId);
+    clearInterval(secondIntervalId);
+    cancelAnimationFrame(rafId);
+    holding = false;
+    holdBtn.classList.remove('pressed');
+    player.classList.add('caught');
+    player.classList.remove('moving');
+    flash.classList.add('active');
+    setTimeout(()=>flash.classList.remove('active'), 380);
+    updateSurvivorCount();
+    showOverlay('lose', '탈락!', reason + '<br>다시 도전해보세요.');
+  }
+
+  function win(){
+    if(phase === 'ended') return;
+    phase = 'ended';
+    clearTimeout(lightTimeoutId);
+    clearInterval(secondIntervalId);
+    cancelAnimationFrame(rafId);
+    holding = false;
+    holdBtn.classList.remove('pressed');
+    updateSurvivorCount();
+    showOverlay('win', '생존!', '도착선까지 무사히 도달했습니다.<br>축하합니다.');
+  }
+
+  function timeout(){
+    eliminate('제한 시간 초과');
+  }
+
+  function showOverlay(type, big, sub){
+    overlay.classList.remove('hidden');
+    overlay.classList.remove('win','lose');
+    overlay.classList.add(type);
+    overlay.innerHTML = `
+      <div class="symbols">○ △ □</div>
+      <div class="big">${big}</div>
+      <p>${sub}</p>
+      <button id="startBtn">${type === 'win' ? '다시 도전' : '다시 시작'}</button>
+    `;
+    document.getElementById('startBtn').addEventListener('click', startGame);
+  }
+
+  function tick(ts){
+    if(phase === 'ended') return;
+    if(lastFrame === null) lastFrame = ts;
+    const dt = (ts - lastFrame) / 1000;
+    lastFrame = ts;
+
+    updateNpcs(dt);
+
+    if(holding && phase === 'green'){
+      progress += SPEED * dt;
+      if(progress >= 100){
+        progress = 100;
+        setLane();
+        win();
+        return;
+      }
+      setLane();
+    } else if(holding && phase === 'red'){
+      // safety net: shouldn't normally trigger due to setLight() check
+      eliminate('빨간불에 움직였습니다');
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startGame(){
+    overlay.classList.add('hidden');
+    progress = 0;
+    holding = false;
+    timeLeft = TOTAL_TIME;
+    lastFrame = null;
+    player.classList.remove('caught');
+    player.classList.remove('moving');
+    holdBtn.disabled = false;
+    timerEl.textContent = timeLeft;
+    timerEl.classList.remove('warn');
+    createNpcs();
+    setLane();
+    setLight('green');
+    scheduleNextLight();
+    secondIntervalId = setInterval(()=>{
+      timeLeft -= 1;
+      timerEl.textContent = Math.max(timeLeft,0);
+      if(timeLeft <= 10) timerEl.classList.add('warn');
+      if(timeLeft <= 0){
+        timerEl.textContent = 0;
+        timeout();
+      }
+    }, 1000);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function pressStart(e){
+    if(e) e.preventDefault();
+    if(phase === 'ended') return;
+    if(phase === 'red'){
+      eliminate('빨간불에 움직였습니다');
+      return;
+    }
+    holding = true;
+    holdBtn.classList.add('pressed');
+    player.classList.add('moving');
+  }
+  function pressEnd(e){
+    if(e) e.preventDefault();
+    holding = false;
+    holdBtn.classList.remove('pressed');
+    player.classList.remove('moving');
+  }
+
+  holdBtn.addEventListener('pointerdown', pressStart);
+  holdBtn.addEventListener('pointerup', pressEnd);
+  holdBtn.addEventListener('pointerleave', pressEnd);
+  holdBtn.addEventListener('pointercancel', pressEnd);
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space'){ pressStart(e); }
+  });
+  window.addEventListener('keyup', (e)=>{
+    if(e.code === 'Space'){ pressEnd(e); }
+  });
+  window.addEventListener('blur', ()=> pressEnd());
+
+  startBtn.addEventListener('click', startGame);
+  window.addEventListener('resize', setLane);
+
+  setLane();
+})();
+</script>
+</body>
+</html>

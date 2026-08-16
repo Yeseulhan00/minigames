@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>거인 사냥꾼 - 스테이지 모드</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: radial-gradient(circle at 50% 30%, #2b3a55 0%, #10131f 70%);
+    font-family: 'Segoe UI', sans-serif;
+    cursor: crosshair;
+  }
+  canvas { display: block; }
+  #hud {
+    position: absolute; top: 0; left: 0; width: 100%;
+    padding: 16px; box-sizing: border-box;
+    color: #fff; pointer-events: none;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  #playerInfo, #giantInfo { text-shadow: 0 2px 4px rgba(0,0,0,0.7); }
+  .homeLink {
+    display: inline-block; margin-bottom: 6px;
+    color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px;
+    pointer-events: auto; cursor: pointer;
+  }
+  .homeLink:hover { color: #fff; }
+  .barBg {
+    width: 260px; height: 18px; background: rgba(0,0,0,0.5);
+    border: 2px solid #fff; border-radius: 9px; overflow: hidden; margin-top: 4px;
+  }
+  #giantBar { height: 100%; background: linear-gradient(90deg,#ff4d4d,#ff8a4d); width: 100%; transition: width 0.15s; }
+  #playerBar { height: 100%; background: linear-gradient(90deg,#4dff88,#4dd2ff); width: 100%; transition: width 0.15s; }
+  #ammoInfo { font-size: 20px; font-weight: bold; margin-top: 8px; }
+  #stageTitle { font-size: 22px; font-weight: 900; }
+  #giantName { font-size: 18px; opacity: 0.9; }
+  #stageBanner {
+    position: absolute; top: 50px; left: 50%; transform: translate(-50%, -30px);
+    color: #fff; font-size: 34px; font-weight: 900; text-align: center;
+    text-shadow: 0 0 16px rgba(255,200,80,0.8), 0 4px 8px rgba(0,0,0,0.8);
+    opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none;
+  }
+  #stageBanner.show { opacity: 1; transform: translate(-50%, 0); }
+  #centerMsg {
+    position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
+    color: #fff; font-size: 46px; font-weight: 900; text-align: center;
+    text-shadow: 0 0 20px rgba(255,80,80,0.9), 0 4px 8px rgba(0,0,0,0.8);
+    display: none; pointer-events: none;
+  }
+  #subMsg {
+    position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%);
+    color: #ffdd88; font-size: 20px; text-align: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.9); display: none; pointer-events: none;
+  }
+  #actionBtn {
+    display: none; position: absolute; top: 55%; left: 50%; transform: translateX(-50%);
+    padding: 12px 28px; font-size: 20px; font-weight: bold; cursor: pointer;
+    background: #ff4d4d; color: #fff; border: none; border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+  #instructions {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.75); font-size: 14px; text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud">
+  <div id="playerInfo">
+    <a class="homeLink" href="../index.html">← 목록으로</a>
+    <div id="stageTitle">STAGE 1 / 5</div>
+    <div>내 체력</div>
+    <div class="barBg"><div id="playerBar"></div></div>
+    <div id="ammoInfo">🔫 탄창: 6 / 6</div>
+  </div>
+  <div id="giantInfo" style="text-align:right;">
+    <div id="giantName">거인</div>
+    <div class="barBg"><div id="giantBar"></div></div>
+  </div>
+</div>
+<div id="stageBanner"></div>
+<div id="centerMsg"></div>
+<div id="subMsg"></div>
+<button id="actionBtn">다음 단계</button>
+<div id="instructions">마우스로 조준, 클릭으로 발사 · R 키로 재장전 · 머리를 맞히면 크리티컬 + 기절!</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+// ---------- 스테이지 설정 ----------
+const STAGES = [
+  { name: '작은 거인',   hp: 180, attackInterval: 130, rockSpeed: 6.0, rockCount: 1, headRadius: 58, healOnStart: 0   },
+  { name: '거인',        hp: 280, attackInterval: 105, rockSpeed: 6.6, rockCount: 1, headRadius: 54, healOnStart: 15 },
+  { name: '강한 거인',   hp: 400, attackInterval: 90,  rockSpeed: 7.2, rockCount: 2, headRadius: 50, healOnStart: 15 },
+  { name: '분노한 거인', hp: 540, attackInterval: 75,  rockSpeed: 7.8, rockCount: 2, headRadius: 46, healOnStart: 20 },
+  { name: '거인왕',      hp: 720, attackInterval: 60,  rockSpeed: 8.6, rockCount: 3, headRadius: 42, healOnStart: 20 }
+];
+
+// ---------- 상태 ----------
+const state = {
+  mouse: { x: window.innerWidth/2, y: window.innerHeight/2 },
+  bullets: [],
+  particles: [],
+  giantProjectiles: [],
+  ammo: 6,
+  maxAmmo: 6,
+  reloading: false,
+  playerHP: 100,
+  playerMaxHP: 100,
+  giantHP: 0,
+  giantMaxHP: 0,
+  gameOver: false,
+  won: false,
+  allClear: false,
+  shake: 0,
+  giantAttackTimer: 0,
+  giantHitFlash: 0,
+  muzzleFlash: 0,
+  time: 0,
+  stageIndex: 0,
+  paused: false
+};
+
+const giant = {
+  x: () => canvas.width/2,
+  baseY: () => canvas.height * 0.42,
+  bobPhase: 0,
+  headRadius: 55,
+  bodyWidth: 160,
+  bodyHeight: 260,
+  stunTimer: 0
+};
+
+function giantHeadPos() {
+  const bob = Math.sin(giant.bobPhase) * 8;
+  return { x: giant.x(), y: giant.baseY() + bob };
+}
+function giantBodyRect() {
+  const head = giantHeadPos();
+  return {
+    x: giant.x() - giant.bodyWidth/2,
+    y: head.y + giant.headRadius - 10,
+    w: giant.bodyWidth,
+    h: giant.bodyHeight
+  };
+}
+
+// ---------- 입력 ----------
+canvas.addEventListener('mousemove', e => {
+  state.mouse.x = e.clientX;
+  state.mouse.y = e.clientY;
+});
+canvas.addEventListener('click', () => {
+  if (state.gameOver || state.paused) return;
+  shoot();
+});
+window.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'r') reload();
+});
+document.getElementById('actionBtn').addEventListener('click', () => {
+  if (state.allClear || (!state.won && state.gameOver)) {
+    fullReset();
+  } else if (state.won) {
+    nextStage();
+  }
+});
+
+function shoot() {
+  if (state.reloading || state.gameOver) return;
+  if (state.ammo <= 0) { reload(); return; }
+  state.ammo--;
+  updateAmmoUI();
+  state.muzzleFlash = 6;
+
+  const startX = canvas.width/2;
+  const startY = canvas.height - 40;
+  const dx = state.mouse.x - startX;
+  const dy = state.mouse.y - startY;
+  const dist = Math.hypot(dx, dy);
+  const speed = 28;
+  state.bullets.push({
+    x: startX, y: startY,
+    vx: dx/dist*speed, vy: dy/dist*speed,
+    trail: []
+  });
+}
+
+function reload() {
+  if (state.reloading || state.ammo === state.maxAmmo || state.gameOver) return;
+  state.reloading = true;
+  document.getElementById('ammoInfo').textContent = '🔄 재장전 중...';
+  setTimeout(() => {
+    state.ammo = state.maxAmmo;
+    state.reloading = false;
+    updateAmmoUI();
+  }, 900);
+}
+
+function updateAmmoUI() {
+  if (!state.reloading) {
+    document.getElementById('ammoInfo').textContent = `🔫 탄창: ${state.ammo} / ${state.maxAmmo}`;
+  }
+}
+
+// ---------- 충돌 ----------
+function circleHit(px, py, cx, cy, r) { return Math.hypot(px-cx, py-cy) <= r; }
+function rectHit(px, py, rect) { return px >= rect.x && px <= rect.x+rect.w && py >= rect.y && py <= rect.y+rect.h; }
+
+function damageGiant(amount, isCrit, hitX, hitY) {
+  state.giantHP = Math.max(0, state.giantHP - amount);
+  state.giantHitFlash = 8;
+  state.shake = isCrit ? 14 : 6;
+  spawnParticles(hitX, hitY, isCrit ? '#ffdd55' : '#ff6666', isCrit ? 22 : 10);
+  updateGiantBar();
+  if (isCrit) giant.stunTimer = 40;
+  if (state.giantHP <= 0 && !state.gameOver) {
+    stageCleared();
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i=0;i<count;i++) {
+    const angle = Math.random()*Math.PI*2;
+    const speed = Math.random()*6+2;
+    state.particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 30+Math.random()*20, color });
+  }
+}
+
+function updateGiantBar() {
+  document.getElementById('giantBar').style.width = (state.giantHP/state.giantMaxHP*100)+'%';
+}
+function updatePlayerBar() {
+  document.getElementById('playerBar').style.width = (Math.max(0,state.playerHP)/state.playerMaxHP*100)+'%';
+}
+
+// ---------- 거인 공격 ----------
+function giantThrowRock() {
+  const cfg = STAGES[state.stageIndex];
+  const head = giantHeadPos();
+  for (let n=0; n<cfg.rockCount; n++) {
+    const targetX = canvas.width/2 + (Math.random()*360-180);
+    const targetY = canvas.height - 60;
+    const startX = giant.x() + (Math.random()*140-70);
+    const startY = head.y + 150;
+    const dx = targetX-startX, dy = targetY-startY;
+    const dist = Math.hypot(dx,dy);
+    const speed = cfg.rockSpeed;
+    state.giantProjectiles.push({
+      x: startX, y: startY,
+      vx: dx/dist*speed, vy: dy/dist*speed,
+      r: 16, warnTimer: 30 - Math.min(20, state.stageIndex*3), targetX, targetY
+    });
+  }
+}
+
+// ---------- 스테이지 흐름 ----------
+function loadStage(index) {
+  const cfg = STAGES[index];
+  state.stageIndex = index;
+  state.giantMaxHP = cfg.hp;
+  state.giantHP = cfg.hp;
+  giant.headRadius = cfg.headRadius;
+  giant.stunTimer = 0;
+  state.giantProjectiles = [];
+  state.bullets = [];
+  state.giantAttackTimer = 0;
+  state.gameOver = false;
+  state.won = false;
+  state.paused = false;
+
+  state.playerHP = Math.min(state.playerMaxHP, state.playerHP + cfg.healOnStart);
+
+  document.getElementById('stageTitle').textContent = `STAGE ${index+1} / ${STAGES.length}`;
+  document.getElementById('giantName').textContent = cfg.name;
+  updateGiantBar();
+  updatePlayerBar();
+  updateAmmoUI();
+  document.getElementById('centerMsg').style.display = 'none';
+  document.getElementById('subMsg').style.display = 'none';
+  document.getElementById('actionBtn').style.display = 'none';
+
+  showStageBanner(`STAGE ${index+1} · ${cfg.name} 등장!`);
+}
+
+function showStageBanner(text) {
+  const el = document.getElementById('stageBanner');
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+function stageCleared() {
+  state.gameOver = true;
+  state.won = true;
+  state.paused = true;
+  const isLast = state.stageIndex === STAGES.length - 1;
+  const el = document.getElementById('centerMsg');
+  const sub = document.getElementById('subMsg');
+  const btn = document.getElementById('actionBtn');
+  if (isLast) {
+    state.allClear = true;
+    el.textContent = '🏆 모든 단계 클리어!';
+    el.style.color = '#ffdd55';
+    sub.textContent = '거인왕까지 모두 물리쳤습니다. 축하합니다!';
+    btn.textContent = '처음부터 다시';
+  } else {
+    el.textContent = `✅ STAGE ${state.stageIndex+1} 클리어!`;
+    el.style.color = '#8affa0';
+    sub.textContent = `${STAGES[state.stageIndex].name}을(를) 물리쳤습니다.`;
+    btn.textContent = '다음 단계로';
+  }
+  el.style.display = 'block';
+  sub.style.display = 'block';
+  btn.style.display = 'block';
+}
+
+function nextStage() {
+  const next = state.stageIndex + 1;
+  loadStage(next);
+}
+
+function loseGame() {
+  state.gameOver = true;
+  state.won = false;
+  state.paused = true;
+  const el = document.getElementById('centerMsg');
+  const sub = document.getElementById('subMsg');
+  const btn = document.getElementById('actionBtn');
+  el.textContent = '💀 쓰러졌습니다...';
+  el.style.color = '#ff4d4d';
+  sub.textContent = `STAGE ${state.stageIndex+1} · ${STAGES[state.stageIndex].name}에게 패배`;
+  sub.style.display = 'block';
+  btn.textContent = '처음부터 다시';
+  el.style.display = 'block';
+  btn.style.display = 'block';
+}
+
+function fullReset() {
+  state.playerHP = state.playerMaxHP;
+  state.ammo = state.maxAmmo;
+  state.reloading = false;
+  state.allClear = false;
+  state.particles = [];
+  loadStage(0);
+}
+
+// ---------- 그리기 ----------
+function drawGround() {
+  const grad = ctx.createLinearGradient(0, canvas.height-140, 0, canvas.height);
+  grad.addColorStop(0, '#1c2438');
+  grad.addColorStop(1, '#05070c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, canvas.height-140, canvas.width, 140);
+}
+
+function drawGiant() {
+  if (state.won) return;
+  const head = giantHeadPos();
+  const body = giantBodyRect();
+  const flashing = state.giantHitFlash > 0;
+
+  ctx.fillStyle = flashing ? '#ff9999' : '#5a4632';
+  ctx.beginPath();
+  ctx.moveTo(body.x, body.y+body.h);
+  ctx.lineTo(body.x, body.y+40);
+  ctx.quadraticCurveTo(body.x, body.y, body.x+body.w/2, body.y);
+  ctx.quadraticCurveTo(body.x+body.w, body.y, body.x+body.w, body.y+40);
+  ctx.lineTo(body.x+body.w, body.y+body.h);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = flashing ? '#ffaaaa' : '#4a3826';
+  ctx.fillRect(body.x-30, body.y+30, 30, 160);
+  ctx.fillRect(body.x+body.w, body.y+30, 30, 160);
+
+  ctx.fillStyle = '#332619';
+  ctx.fillRect(body.x+20, body.y+body.h-10, 50, 60);
+  ctx.fillRect(body.x+body.w-70, body.y+body.h-10, 50, 60);
+
+  ctx.fillStyle = flashing ? '#ffbbbb' : '#7a5f42';
+  ctx.beginPath();
+  ctx.arc(head.x, head.y, giant.headRadius, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = giant.stunTimer > 0 ? '#88ccff' : '#ff3333';
+  ctx.beginPath();
+  ctx.arc(head.x-18, head.y-5, 6, 0, Math.PI*2);
+  ctx.arc(head.x+18, head.y-5, 6, 0, Math.PI*2);
+  ctx.fill();
+
+  if (giant.stunTimer > 0) {
+    ctx.fillStyle = '#fff';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⭐ 기절 ⭐', head.x, head.y - giant.headRadius - 15);
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,0,0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(head.x, head.y, giant.headRadius, 0, Math.PI*2);
+  ctx.stroke();
+}
+
+function drawPlayerGun() {
+  const startX = canvas.width/2;
+  const startY = canvas.height - 40;
+  const dx = state.mouse.x-startX, dy = state.mouse.y-startY;
+  const angle = Math.atan2(dy,dx);
+
+  ctx.save();
+  ctx.translate(startX, startY);
+  ctx.rotate(angle);
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, -6, 60, 12);
+  ctx.fillStyle = '#444';
+  ctx.fillRect(-14, -12, 24, 24);
+  if (state.muzzleFlash > 0) {
+    ctx.fillStyle = 'rgba(255,220,100,0.9)';
+    ctx.beginPath();
+    ctx.arc(60, 0, 14, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawCrosshair() {
+  const {x,y} = state.mouse;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x,y,14,0,Math.PI*2);
+  ctx.moveTo(x-20,y); ctx.lineTo(x-8,y);
+  ctx.moveTo(x+8,y); ctx.lineTo(x+20,y);
+  ctx.moveTo(x,y-20); ctx.lineTo(x,y-8);
+  ctx.moveTo(x,y+8); ctx.lineTo(x,y+20);
+  ctx.stroke();
+}
+
+function drawBullets() {
+  ctx.lineCap = 'round';
+  for (const b of state.bullets) {
+    ctx.strokeStyle = 'rgba(255,240,150,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (b.trail.length>1) {
+      ctx.moveTo(b.trail[0].x, b.trail[0].y);
+      for (const p of b.trail) ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#fff8c0';
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,4,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawGiantProjectiles() {
+  for (const p of state.giantProjectiles) {
+    if (p.warnTimer > 0) continue;
+    ctx.fillStyle = '#8a6a4a';
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#3a2a1a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  for (const p of state.giantProjectiles) {
+    if (p.warnTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.5*Math.sin(state.time*0.4);
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(p.targetX, p.targetY, 30, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function drawParticles() {
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.max(0, p.life/40);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,3,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- 업데이트 ----------
+function update() {
+  state.time++;
+  giant.bobPhase += 0.03;
+  if (giant.stunTimer > 0) giant.stunTimer--;
+  if (state.giantHitFlash > 0) state.giantHitFlash--;
+  if (state.muzzleFlash > 0) state.muzzleFlash--;
+  if (state.shake > 0) state.shake *= 0.85;
+
+  if (state.paused || state.gameOver) return;
+
+  const cfg = STAGES[state.stageIndex];
+
+  for (let i=state.bullets.length-1;i>=0;i--) {
+    const b = state.bullets[i];
+    b.trail.push({x:b.x,y:b.y});
+    if (b.trail.length>8) b.trail.shift();
+    b.x += b.vx; b.y += b.vy;
+
+    let hit = false;
+    const head = giantHeadPos();
+    if (circleHit(b.x,b.y, head.x, head.y, giant.headRadius)) {
+      damageGiant(35, true, b.x, b.y);
+      hit = true;
+    } else if (rectHit(b.x,b.y, giantBodyRect())) {
+      damageGiant(15, false, b.x, b.y);
+      hit = true;
+    }
+    if (hit || b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height) {
+      state.bullets.splice(i,1);
+    }
+    if (state.gameOver) break;
+  }
+
+  if (!state.gameOver && giant.stunTimer <= 0) {
+    state.giantAttackTimer++;
+    if (state.giantAttackTimer > cfg.attackInterval) {
+      giantThrowRock();
+      state.giantAttackTimer = 0;
+    }
+  }
+
+  for (let i=state.giantProjectiles.length-1;i>=0;i--) {
+    const p = state.giantProjectiles[i];
+    if (p.warnTimer > 0) { p.warnTimer--; continue; }
+    p.x += p.vx; p.y += p.vy;
+    if (p.y >= p.targetY-4) {
+      const playerX = canvas.width/2;
+      const distToPlayer = Math.abs(p.x - playerX);
+      if (distToPlayer < 60) {
+        state.playerHP = Math.max(0, state.playerHP - 18);
+        updatePlayerBar();
+        state.shake = 16;
+        spawnParticles(p.x,p.y,'#ff6666',14);
+        if (state.playerHP <= 0) loseGame();
+      } else {
+        spawnParticles(p.x,p.y,'#8a6a4a',8);
+      }
+      state.giantProjectiles.splice(i,1);
+    }
+  }
+
+  for (let i=state.particles.length-1;i>=0;i--) {
+    const p = state.particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life--;
+    if (p.life<=0) state.particles.splice(i,1);
+  }
+}
+
+// ---------- 메인 루프 ----------
+function loop() {
+  ctx.save();
+  if (state.shake > 0.5) {
+    ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
+  }
+  ctx.clearRect(-50,-50,canvas.width+100,canvas.height+100);
+  drawGround();
+  drawGiant();
+  drawGiantProjectiles();
+  drawBullets();
+  drawParticles();
+  drawPlayerGun();
+  ctx.restore();
+  drawCrosshair();
+
+  update();
+  requestAnimationFrame(loop);
+}
+
+loadStage(0);
+loop();
+</script>
+</body>
+</html>

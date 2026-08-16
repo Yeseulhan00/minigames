@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>LEVEL 0 :: 이탈 기록</title>
+<style>
+  :root{
+    --bg:#040300;
+    --floor:#c9bb7c;
+    --floor-dark:#a3945a;
+    --wall:#4a4020;
+    --wall-line:#231e0d;
+    --text:#e8dfae;
+    --text-dim:#a89b6a;
+    --warn:#c2402f;
+    --exit:#fff3ac;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Courier New', Courier, monospace;
+    overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+    touch-action:manipulation;
+  }
+  #app{
+    position:relative; width:100%; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+
+  /* ---- scanline / vhs glitch overlay ---- */
+  #crt{
+    position:fixed; inset:0; pointer-events:none; z-index:50;
+    background:
+      repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+    mix-blend-mode:multiply;
+    opacity:0.9;
+  }
+  #crt.flicker{
+    animation: glitchflash 0.35s steps(2,end) 0s 1;
+  }
+  @keyframes glitchflash{
+    0%{ filter: none; }
+    30%{ filter: hue-rotate(30deg) brightness(1.6) saturate(2); transform: translateX(-2px); }
+    60%{ filter: hue-rotate(-20deg) brightness(0.4); transform: translateX(2px); }
+    100%{ filter: none; transform:none; }
+  }
+
+  /* ---- start screen ---- */
+  #startScreen{
+    position:absolute; inset:0; z-index:40;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:18px; padding:24px;
+    background:radial-gradient(ellipse at center, #14110a 0%, #030200 80%);
+  }
+  #startScreen h1{
+    font-size:clamp(28px,8vw,52px);
+    letter-spacing:6px;
+    margin:0;
+    color:var(--exit);
+    text-shadow: 2px 0 #b3312a, -2px 0 #2fa3a3, 0 0 18px rgba(255,240,170,0.4);
+    animation: titleflicker 3.4s infinite;
+  }
+  @keyframes titleflicker{
+    0%,92%,100%{ opacity:1; }
+    93%{ opacity:0.4; }
+    94%{ opacity:1; }
+    95%{ opacity:0.55; }
+    96%{ opacity:1; }
+  }
+  #startScreen .sub{
+    color:var(--text-dim); letter-spacing:3px; font-size:13px; text-transform:uppercase;
+  }
+  #startScreen p.desc{
+    max-width:420px; line-height:1.7; font-size:13px; color:var(--text-dim);
+    border-top:1px dashed #4a4020; border-bottom:1px dashed #4a4020; padding:14px 0;
+  }
+  .warnbtn{
+    font-family:inherit; font-size:15px; letter-spacing:2px;
+    padding:14px 28px; cursor:pointer;
+    color:#100c00; font-weight:bold;
+    background:repeating-linear-gradient(45deg,#e2b93a,#e2b93a 12px,#171200 12px,#171200 24px);
+    border:2px solid #000; box-shadow:0 0 0 2px #e2b93a, 0 6px 18px rgba(0,0,0,0.6);
+  }
+  .warnbtn:active{ transform:translateY(1px); }
+
+  /* ---- HUD ---- */
+  #hud{
+    position:absolute; top:0; left:0; right:0; z-index:30;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:10px 14px; font-size:11px; letter-spacing:1px;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.75), rgba(0,0,0,0));
+    pointer-events:none;
+  }
+  #hud .block{ min-width:120px; }
+  #hud .label{ color:var(--text-dim); font-size:9px; text-transform:uppercase; letter-spacing:2px; }
+  #hud .value{ color:var(--text); font-size:14px; }
+  #sanityBarOuter{ width:110px; height:8px; border:1px solid var(--text-dim); margin-top:3px; }
+  #sanityBarInner{ height:100%; background:var(--exit); width:100%; transition:width 0.4s linear, background 0.4s linear; }
+  #warningText{
+    position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:30;
+    color:var(--warn); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    opacity:0; transition:opacity 0.5s; pointer-events:none; text-align:center;
+    text-shadow:0 0 8px rgba(194,64,47,0.8);
+  }
+  #warningText.show{ opacity:1; }
+
+  canvas#game{
+    display:block; image-rendering:pixelated;
+    filter:contrast(1.05) saturate(0.85);
+  }
+
+  /* ---- touch controls ---- */
+  #touchControls{
+    position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:30;
+    display:grid; grid-template-columns:44px 44px 44px; grid-template-rows:44px 44px 44px;
+    gap:4px; opacity:0.85;
+  }
+  #touchControls button{
+    font-family:inherit; font-size:16px; color:var(--text);
+    background:rgba(20,17,8,0.75); border:1px solid var(--text-dim);
+  }
+  #touchControls button:active{ background:rgba(90,80,40,0.85); }
+  .tc-up{grid-column:2; grid-row:1;}
+  .tc-left{grid-column:1; grid-row:2;}
+  .tc-down{grid-column:2; grid-row:2;}
+  .tc-right{grid-column:3; grid-row:2;}
+
+  /* ---- end screen ---- */
+  #endScreen{
+    position:absolute; inset:0; z-index:45; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    text-align:center; padding:24px;
+    background:rgba(2,1,0,0.92);
+  }
+  #endScreen h2{ font-size:clamp(22px,7vw,36px); letter-spacing:4px; margin:0; }
+  #endScreen p{ color:var(--text-dim); font-size:12px; max-width:380px; line-height:1.7; }
+  #endStats{ font-size:13px; color:var(--text); letter-spacing:1px; }
+
+  .footnote{
+    position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+    font-size:9px; color:#5a5030; letter-spacing:1px; z-index:20;
+  }
+  .home{
+    position:fixed; left:10px; bottom:10px; z-index:60;
+    font-size:11px; letter-spacing:1px; text-decoration:none;
+    color:var(--text-dim); background:rgba(4,3,0,0.7);
+    border:1px solid #4a4020; padding:5px 10px;
+  }
+  .home:hover{ color:var(--exit); border-color:var(--exit); }
+</style>
+</head>
+<body>
+<div id="crt"></div>
+<div id="app">
+
+  <div id="startScreen">
+    <div class="sub">비공식 이탈자 기록 · 열람 등급 없음</div>
+    <h1>백&nbsp;룸&nbsp;즈</h1>
+    <div class="sub">LEVEL 0 — 임의 접점</div>
+    <p class="desc">
+      당신은 현실의 이음매 사이, 축축한 카펫과 노란 형광등만이 존재하는
+      무한한 사무 공간으로 미끄러져 들어왔다.<br><br>
+      출구로 추정되는 지점까지 이동하라. 손전등이 비추는 곳 외에는 아무것도 보이지 않는다.
+      정신 안정도가 바닥나거나, <b>그것</b>에게 붙잡히면 기록은 여기서 끝난다.
+    </p>
+    <button class="warnbtn" id="startBtn">진입한다</button>
+    <div class="sub" style="font-size:10px;">WASD / 방향키로 이동 · 모바일은 하단 버튼 사용</div>
+  </div>
+
+  <div id="hud" style="display:none;">
+    <div class="block">
+      <div class="label">경과 시간</div>
+      <div class="value" id="timerVal">00:00</div>
+    </div>
+    <div class="block" style="text-align:right;">
+      <div class="label">정신 안정도</div>
+      <div id="sanityBarOuter"><div id="sanityBarInner"></div></div>
+    </div>
+  </div>
+  <div id="warningText">무언가 가까이 있다</div>
+
+  <canvas id="game"></canvas>
+
+  <div id="touchControls" style="display:none;">
+    <button class="tc-up" data-dir="N">▲</button>
+    <button class="tc-left" data-dir="W">◀</button>
+    <button class="tc-down" data-dir="S">▼</button>
+    <button class="tc-right" data-dir="E">▶</button>
+  </div>
+
+  <div id="endScreen">
+    <h2 id="endTitle">-</h2>
+    <p id="endDesc">-</p>
+    <div id="endStats">-</div>
+    <button class="warnbtn" id="retryBtn">다시 진입한다</button>
+  </div>
+
+  <div class="footnote">기록 종료 시 자동 저장되지 않음</div>
+</div>
+<a class="home" href="../index.html">← 목록으로</a>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- config ----------
+  const COLS = 13, ROWS = 13, CELL = 34;
+  const MOVE_MS = 140;
+  const ENTITY_START_DELAY = 9000;   // ms before entity wakes
+  const ENTITY_STEP_MS = 620;        // ms per entity move
+  const SANITY_MAX = 100;
+  const SANITY_DRAIN_PER_SEC = 100/210; // ~3.5 min to empty passively
+  const LIGHT_RADIUS_NORMAL = 130;
+  const LIGHT_RADIUS_FLICKER = 55;
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  canvas.width = COLS*CELL;
+  canvas.height = ROWS*CELL;
+
+  const startScreen = document.getElementById('startScreen');
+  const endScreen = document.getElementById('endScreen');
+  const hud = document.getElementById('hud');
+  const touchControls = document.getElementById('touchControls');
+  const timerVal = document.getElementById('timerVal');
+  const sanityBarInner = document.getElementById('sanityBarInner');
+  const warningText = document.getElementById('warningText');
+  const crt = document.getElementById('crt');
+
+  let isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(isTouch) touchControls.style.display = 'grid';
+
+  // ---------- maze generation ----------
+  function makeGrid(){
+    const g = [];
+    for(let y=0;y<ROWS;y++){
+      const row=[];
+      for(let x=0;x<COLS;x++){
+        row.push({x,y,walls:{N:true,S:true,E:true,W:true},visited:false});
+      }
+      g.push(row);
+    }
+    return g;
+  }
+
+  const DIRS = [
+    ['N',0,-1,'S'],['S',0,1,'N'],['E',1,0,'W'],['W',-1,0,'E']
+  ];
+
+  function carve(grid){
+    const stack=[];
+    let current = grid[0][0];
+    current.visited = true;
+    stack.push(current);
+    while(stack.length){
+      current = stack[stack.length-1];
+      const neighbors=[];
+      for(const [dir,dx,dy,opp] of DIRS){
+        const nx=current.x+dx, ny=current.y+dy;
+        if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&!grid[ny][nx].visited){
+          neighbors.push([dir,nx,ny,opp]);
+        }
+      }
+      if(neighbors.length){
+        const [dir,nx,ny,opp] = neighbors[Math.floor(Math.random()*neighbors.length)];
+        current.walls[dir]=false;
+        grid[ny][nx].walls[opp]=false;
+        grid[ny][nx].visited=true;
+        stack.push(grid[ny][nx]);
+      } else {
+        stack.pop();
+      }
+    }
+    return grid;
+  }
+
+  // knock a few extra openings so it feels like wandering halls, not a perfect maze
+  function addLoops(grid, count){
+    let tries = count*8;
+    while(count>0 && tries-->0){
+      const x = Math.floor(Math.random()*COLS);
+      const y = Math.floor(Math.random()*ROWS);
+      const cell = grid[y][x];
+      const [dir,dx,dy,opp] = DIRS[Math.floor(Math.random()*4)];
+      const nx=x+dx, ny=y+dy;
+      if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS && cell.walls[dir]){
+        cell.walls[dir]=false;
+        grid[ny][nx].walls[opp]=false;
+        count--;
+      }
+    }
+  }
+
+  function bfsFarthest(grid, sx, sy){
+    const q=[[sx,sy,0]];
+    const seen = new Set([sx+','+sy]);
+    let farCell=[sx,sy], farDist=0;
+    while(q.length){
+      const [x,y,d] = q.shift();
+      if(d>farDist){ farDist=d; farCell=[x,y]; }
+      const cell = grid[y][x];
+      for(const [dir,dx,dy] of DIRS){
+        if(!cell.walls[dir]){
+          const nx=x+dx, ny=y+dy;
+          const key=nx+','+ny;
+          if(!seen.has(key)){
+            seen.add(key);
+            q.push([nx,ny,d+1]);
+          }
+        }
+      }
+    }
+    return {cell:farCell, dist:farDist};
+  }
+
+  function bfsPath(grid, sx, sy, tx, ty){
+    if(sx===tx && sy===ty) return [];
+    const q=[[sx,sy]];
+    const seen = new Set([sx+','+sy]);
+    const prev = {};
+    while(q.length){
+      const [x,y] = q.shift();
+      const cell = grid[y][x];
+      for(const [dir,dx,dy] of DIRS){
+        if(!cell.walls[dir]){
+          const nx=x+dx, ny=y+dy;
+          const key=nx+','+ny;
+          if(!seen.has(key)){
+            seen.add(key);
+            prev[key] = [x,y];
+            if(nx===tx && ny===ty){
+              // reconstruct
+              const path=[[nx,ny]];
+              let cur=key;
+              while(cur !== sx+','+sy){
+                const p = prev[cur];
+                path.unshift(p);
+                cur = p[0]+','+p[1];
+              }
+              path.shift(); // remove start
+              return path;
+            }
+            q.push([nx,ny]);
+          }
+        }
+      }
+    }
+    return [];
+  }
+
+  // ---------- game state ----------
+  let grid, exitCell, mazeLayer;
+  let player, entity;
+  let elapsedMs, sanity, gameActive, entityAwake;
+  let flickerActive, lastFlickerAt, nextFlickerIn;
+  let lastEntityStep;
+  let keysHeld = {};
+  let rafId = null;
+
+  function newGame(){
+    grid = carve(makeGrid());
+    addLoops(grid, 14);
+    const far = bfsFarthest(grid, 0, 0);
+    exitCell = far.cell;
+
+    player = {
+      x:0, y:0, px:0, py:0,
+      fromX:0, fromY:0, toX:0, toY:0,
+      moving:false, moveStart:0
+    };
+    player.px = player.x*CELL + CELL/2;
+    player.py = player.y*CELL + CELL/2;
+
+    // spawn entity far from player, but not at exit
+    let ex, ey;
+    do{
+      ex = Math.floor(Math.random()*COLS);
+      ey = Math.floor(Math.random()*ROWS);
+    } while((Math.abs(ex-0)+Math.abs(ey-0)) < 8 || (ex===exitCell[0]&&ey===exitCell[1]));
+    entity = { x:ex, y:ey, px:ex*CELL+CELL/2, py:ey*CELL+CELL/2 };
+
+    elapsedMs = 0;
+    sanity = SANITY_MAX;
+    gameActive = true;
+    entityAwake = false;
+    flickerActive = false;
+    lastFlickerAt = 0;
+    nextFlickerIn = 4000 + Math.random()*4000;
+    lastEntityStep = 0;
+
+    buildMazeLayer();
+  }
+
+  function buildMazeLayer(){
+    mazeLayer = document.createElement('canvas');
+    mazeLayer.width = canvas.width;
+    mazeLayer.height = canvas.height;
+    const mctx = mazeLayer.getContext('2d');
+
+    // floor with subtle stain noise
+    mctx.fillStyle = '#b8aa6c';
+    mctx.fillRect(0,0,canvas.width,canvas.height);
+    for(let i=0;i<900;i++){
+      const rx = Math.random()*canvas.width;
+      const ry = Math.random()*canvas.height;
+      const r = 1+Math.random()*2.5;
+      mctx.fillStyle = Math.random()>0.5 ? 'rgba(120,105,55,0.18)' : 'rgba(230,215,150,0.12)';
+      mctx.beginPath(); mctx.arc(rx,ry,r,0,Math.PI*2); mctx.fill();
+    }
+    // cell squares slightly varied for tile look
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        if(Math.random()<0.5){
+          mctx.fillStyle = 'rgba(0,0,0,0.03)';
+          mctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+        }
+      }
+    }
+
+    // walls
+    mctx.strokeStyle = '#231e0d';
+    mctx.lineCap='square';
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        const cell = grid[y][x];
+        const px=x*CELL, py=y*CELL;
+        mctx.lineWidth = 5;
+        mctx.strokeStyle = '#3d341a';
+        mctx.beginPath();
+        if(cell.walls.N){ mctx.moveTo(px,py); mctx.lineTo(px+CELL,py); }
+        if(cell.walls.S){ mctx.moveTo(px,py+CELL); mctx.lineTo(px+CELL,py+CELL); }
+        if(cell.walls.W){ mctx.moveTo(px,py); mctx.lineTo(px,py+CELL); }
+        if(cell.walls.E){ mctx.moveTo(px+CELL,py); mctx.lineTo(px+CELL,py+CELL); }
+        mctx.stroke();
+        mctx.lineWidth = 1.5;
+        mctx.strokeStyle = '#0f0c04';
+        mctx.stroke();
+      }
+    }
+  }
+
+  // ---------- input ----------
+  const KEYMAP = {
+    'w':'N','arrowup':'N',
+    's':'S','arrowdown':'S',
+    'a':'W','arrowleft':'W',
+    'd':'E','arrowright':'E'
+  };
+
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key.toLowerCase();
+    if(KEYMAP[k]){
+      e.preventDefault();
+      tryMove(KEYMAP[k]);
+    }
+  });
+
+  touchControls.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('touchstart', (e)=>{
+      e.preventDefault();
+      tryMove(btn.dataset.dir);
+    }, {passive:false});
+    btn.addEventListener('click', ()=> tryMove(btn.dataset.dir));
+  });
+
+  function tryMove(dir){
+    if(!gameActive || player.moving) return;
+    const cell = grid[player.y][player.x];
+    if(cell.walls[dir]) return;
+    const deltas = {N:[0,-1],S:[0,1],E:[1,0],W:[-1,0]};
+    const [dx,dy] = deltas[dir];
+    player.fromX = player.x; player.fromY = player.y;
+    player.toX = player.x+dx; player.toY = player.y+dy;
+    player.moving = true;
+    player.moveStart = performance.now();
+  }
+
+  // ---------- audio (simple ambient hum, starts on user gesture) ----------
+  let audioCtx = null, humOsc = null, humGain = null;
+  function startAudio(){
+    try{
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      humOsc = audioCtx.createOscillator();
+      humGain = audioCtx.createGain();
+      humOsc.type = 'square';
+      humOsc.frequency.value = 60;
+      humGain.gain.value = 0.015;
+      humOsc.connect(humGain).connect(audioCtx.destination);
+      humOsc.start();
+    }catch(e){ /* audio unavailable, continue silently */ }
+  }
+
+  // ---------- game loop ----------
+  let lastTs = 0;
+
+  function update(ts){
+    if(!lastTs) lastTs = ts;
+    const dt = ts - lastTs;
+    lastTs = ts;
+
+    if(gameActive){
+      elapsedMs += dt;
+
+      // player move animation
+      if(player.moving){
+        const t = Math.min(1, (ts - player.moveStart)/MOVE_MS);
+        player.px = lerp(player.fromX*CELL+CELL/2, player.toX*CELL+CELL/2, t);
+        player.py = lerp(player.fromY*CELL+CELL/2, player.toY*CELL+CELL/2, t);
+        if(t>=1){
+          player.moving = false;
+          player.x = player.toX; player.y = player.toY;
+          checkWinLose();
+        }
+      }
+
+      // entity wake-up
+      if(!entityAwake && elapsedMs > ENTITY_START_DELAY){
+        entityAwake = true;
+        flashWarning('...무언가 깨어났다', 2200);
+      }
+
+      // entity step
+      if(entityAwake){
+        if(ts - lastEntityStep > ENTITY_STEP_MS){
+          lastEntityStep = ts;
+          const path = bfsPath(grid, entity.x, entity.y, player.x, player.y);
+          if(path.length){
+            entity.x = path[0][0];
+            entity.y = path[0][1];
+          }
+        }
+      }
+      entity.px = lerp(entity.px, entity.x*CELL+CELL/2, Math.min(1, dt/180));
+      entity.py = lerp(entity.py, entity.y*CELL+CELL/2, Math.min(1, dt/180));
+
+      // sanity drain
+      const distToEntity = Math.abs(entity.x-player.x)+Math.abs(entity.y-player.y);
+      let drain = SANITY_DRAIN_PER_SEC * (dt/1000);
+      if(entityAwake && distToEntity <= 3) drain *= 2.4;
+      sanity = Math.max(0, sanity - drain);
+
+      // proximity warning UI
+      if(entityAwake && distToEntity <= 3){
+        warningText.classList.add('show');
+      } else {
+        warningText.classList.remove('show');
+      }
+
+      // flicker events
+      if(!flickerActive && ts - lastFlickerAt > nextFlickerIn){
+        flickerActive = true;
+        lastFlickerAt = ts;
+        crt.classList.remove('flicker'); void crt.offsetWidth; crt.classList.add('flicker');
+        setTimeout(()=>{ flickerActive=false; nextFlickerIn = 4500+Math.random()*5000; lastFlickerAt = performance.now(); }, 400+Math.random()*500);
+      }
+
+      checkWinLose();
+      updateHUD();
+    }
+
+    render();
+    rafId = requestAnimationFrame(update);
+  }
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+
+  function checkWinLose(){
+    if(!gameActive) return;
+    if(player.x===exitCell[0] && player.y===exitCell[1]){
+      endGame(true, '탈출 성공', '틈새를 발견했다. 몸을 밀어 넣자 익숙한 형광등 소음이 사라진다.');
+      return;
+    }
+    if(entityAwake && entity.x===player.x && entity.y===player.y){
+      endGame(false, '기록 중단됨', '무언가 당신의 어깨를 붙잡았다. 이후의 기록은 존재하지 않는다.');
+      return;
+    }
+    if(sanity<=0){
+      endGame(false, '정신 붕괴', '똑같은 벽지, 똑같은 냄새, 똑같은 웅웅거림. 더 이상 출구를 구분할 수 없다.');
+      return;
+    }
+  }
+
+  function flashWarning(msg, dur){
+    warningText.textContent = msg;
+    warningText.classList.add('show');
+    setTimeout(()=>{
+      warningText.textContent = '무언가 가까이 있다';
+      if(!(entityAwake && Math.abs(entity.x-player.x)+Math.abs(entity.y-player.y)<=3)){
+        warningText.classList.remove('show');
+      }
+    }, dur);
+  }
+
+  function updateHUD(){
+    const totalSec = Math.floor(elapsedMs/1000);
+    const mm = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const ss = String(totalSec%60).padStart(2,'0');
+    timerVal.textContent = mm+':'+ss;
+    const pct = Math.max(0, sanity);
+    sanityBarInner.style.width = pct+'%';
+    sanityBarInner.style.background = pct>50 ? '#e8dfae' : (pct>20 ? '#d9a441' : '#c2402f');
+  }
+
+  function render(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(mazeLayer,0,0);
+
+    // exit glow (pulsing)
+    const pulse = 0.5+0.5*Math.sin(performance.now()/260);
+    const ex = exitCell[0]*CELL+CELL/2, ey = exitCell[1]*CELL+CELL/2;
+    const grad = ctx.createRadialGradient(ex,ey,2,ex,ey,CELL*1.4);
+    grad.addColorStop(0, `rgba(255,244,180,${0.55+0.35*pulse})`);
+    grad.addColorStop(1, 'rgba(255,244,180,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(ex,ey,CELL*1.4,0,Math.PI*2); ctx.fill();
+
+    // entity
+    if(entityAwake){
+      ctx.save();
+      ctx.fillStyle = '#0a0a0a';
+      ctx.beginPath();
+      ctx.ellipse(entity.px, entity.py, 9, 12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#c2402f';
+      ctx.beginPath(); ctx.arc(entity.px-3, entity.py-3, 1.6, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(entity.px+3, entity.py-3, 1.6, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    // player
+    ctx.save();
+    ctx.fillStyle = '#e8dfae';
+    ctx.beginPath();
+    ctx.arc(player.px, player.py, 8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#4a4020';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // fog of war / flashlight
+    const fog = document.createElement('canvas');
+    fog.width = canvas.width; fog.height = canvas.height;
+    const fctx = fog.getContext('2d');
+    fctx.fillStyle = 'rgba(2,1,0,0.97)';
+    fctx.fillRect(0,0,canvas.width,canvas.height);
+    fctx.globalCompositeOperation = 'destination-out';
+    const radius = flickerActive ? LIGHT_RADIUS_FLICKER : LIGHT_RADIUS_NORMAL;
+    const fg = fctx.createRadialGradient(player.px,player.py, radius*0.15, player.px,player.py, radius);
+    fg.addColorStop(0, 'rgba(0,0,0,1)');
+    fg.addColorStop(0.7, 'rgba(0,0,0,0.85)');
+    fg.addColorStop(1, 'rgba(0,0,0,0)');
+    fctx.fillStyle = fg;
+    fctx.beginPath(); fctx.arc(player.px,player.py,radius,0,Math.PI*2); fctx.fill();
+    ctx.drawImage(fog,0,0);
+
+    // faint yellow tint over everything for fluorescent mood
+    ctx.fillStyle = 'rgba(90,80,20,0.06)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
+  function endGame(won, title, desc){
+    gameActive = false;
+    hud.style.display = 'none';
+    touchControls.style.display = 'none';
+    warningText.classList.remove('show');
+    document.getElementById('endTitle').textContent = title;
+    document.getElementById('endTitle').style.color = won ? '#fff3ac' : '#c2402f';
+    document.getElementById('endDesc').textContent = desc;
+    const totalSec = Math.floor(elapsedMs/1000);
+    const mm = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const ss = String(totalSec%60).padStart(2,'0');
+    document.getElementById('endStats').textContent = `체류 시간 ${mm}:${ss} · 정신 안정도 ${Math.round(sanity)}%`;
+    endScreen.style.display = 'flex';
+  }
+
+  // ---------- boot ----------
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    startAudio();
+    startScreen.style.display = 'none';
+    hud.style.display = 'flex';
+    if(isTouch) touchControls.style.display = 'grid';
+    newGame();
+    lastTs = 0;
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(update);
+  });
+
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    endScreen.style.display = 'none';
+    hud.style.display = 'flex';
+    if(isTouch) touchControls.style.display = 'grid';
+    newGame();
+    lastTs = 0;
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(update);
+  });
+
+})();
+</script>
+</body>
+</html>
