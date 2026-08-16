@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>사마귀 헌터</title>
+<style>
+  :root{
+    --bg-deep:#0c130a;
+    --line:#2a3a22;
+    --ink:#eef4e6;
+    --sub:#8a9a78;
+    --accent:#8fe34a;
+    --accent2:#ff5d5d;
+    --gold:#ffd166;
+    --purple:#c084fc;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(circle at 20% 0%, #1c2c14 0%, transparent 50%),
+      radial-gradient(circle at 85% 100%, #24170f 0%, transparent 50%),
+      var(--bg-deep);
+    color:var(--ink);
+    font-family:'Courier New', ui-monospace, monospace;
+    overflow:hidden;
+    touch-action:none;
+  }
+  .wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    padding:12px 10px 8px;
+  }
+  h1{
+    margin:0 0 2px;
+    font-size:20px;
+    letter-spacing:2px;
+    font-weight:800;
+    color:var(--ink);
+    text-shadow:0 0 12px rgba(143,227,74,0.4);
+  }
+  h1 span{color:var(--accent2);}
+  .tagline{
+    font-size:10px;
+    letter-spacing:3px;
+    color:var(--sub);
+    margin-bottom:10px;
+    text-transform:uppercase;
+  }
+  .hud{
+    display:flex;
+    gap:6px;
+    width:100%;
+    max-width:380px;
+    margin-bottom:8px;
+    justify-content:space-between;
+  }
+  .hud-item{
+    background:rgba(143,227,74,0.06);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:10.5px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    flex:1;
+    justify-content:center;
+    white-space:nowrap;
+  }
+  .hud-item b{color:var(--accent);font-size:13px;}
+  #hearts{letter-spacing:1px;font-size:12px;}
+  .board-frame{
+    position:relative;
+    border:2px solid var(--line);
+    border-radius:10px;
+    background:#0c0f08;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.85), inset 0 0 40px rgba(143,227,74,0.04);
+    overflow:hidden;
+  }
+  #gameCanvas{
+    display:block;
+  }
+  .overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(8,10,6,0.9);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    text-align:center;
+    padding:20px;
+  }
+  .overlay.hidden{display:none;}
+  .overlay .big{
+    font-size:19px;
+    letter-spacing:2px;
+    color:var(--accent2);
+    font-weight:800;
+    text-shadow:0 0 14px rgba(255,93,93,0.5);
+  }
+  .overlay .small{
+    font-size:11px;
+    color:#c3d0b3;
+    line-height:1.8;
+    max-width:260px;
+  }
+  .btn{
+    margin-top:6px;
+    background:var(--accent);
+    color:#0f1a0a;
+    border:none;
+    padding:11px 26px;
+    font-family:inherit;
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:2px;
+    border-radius:22px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #4f8f28;
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #4f8f28;}
+  .hintline{
+    font-size:10px;
+    color:var(--sub);
+    margin-top:10px;
+    letter-spacing:0.5px;
+    text-align:center;
+  }
+  .home{
+    position:fixed; left:10px; bottom:10px; z-index:20;
+    font-size:10px; letter-spacing:1px; text-decoration:none;
+    color:var(--sub); background:rgba(0,0,0,0.35);
+    border:1px solid var(--line); border-radius:8px;
+    padding:5px 10px;
+  }
+  .home:hover{ color:var(--accent); border-color:var(--accent); }
+</style>
+</head>
+<body>
+<a class="home" href="../index.html">← 목록으로</a>
+<div class="wrap">
+  <h1>MANTIS <span>HUNTER</span></h1>
+  <div class="tagline">100 Stages · Boss Every 10th</div>
+
+  <div class="hud">
+    <div class="hud-item">STAGE <b id="stageVal">1</b>/100</div>
+    <div class="hud-item">SCORE <b id="scoreVal">0</b></div>
+    <div class="hud-item" id="hearts">❤️❤️❤️</div>
+  </div>
+
+  <div class="board-frame">
+    <canvas id="gameCanvas"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="big" id="overlayTitle">사마귀 헌터</div>
+      <div class="small" id="overlayText">
+        곤충들에게 다가가면 사마귀가 자동으로 앞다리를 휘둘러 사냥해요.<br>
+        거미(보라색)는 위험하니 조심하세요!<br>
+        10스테이지마다 강력한 보스가 나타납니다 🦗
+      </div>
+      <button class="btn" id="startBtn">사냥 시작</button>
+    </div>
+  </div>
+
+  <div class="hintline">드래그로 이동 · PC는 방향키/WASD로 이동</div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const startBtn = document.getElementById('startBtn');
+  const scoreVal = document.getElementById('scoreVal');
+  const stageVal = document.getElementById('stageVal');
+  const heartsEl = document.getElementById('hearts');
+
+  let W = 380, H = 560;
+  function resize(){
+    const maxW = Math.min(window.innerWidth - 24, 380);
+    const maxH = window.innerHeight - 230;
+    const scale = Math.min(maxW/380, Math.max(maxH,300)/560, 1);
+    W = Math.floor(380*scale);
+    H = Math.floor(560*scale);
+    canvas.width = W;
+    canvas.height = H;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
+
+  const MAX_STAGE = 100;
+
+  // ---------- state ----------
+  let player, enemies, particles, powerups, groundDots;
+  let score, lives, maxLives, stage, running, gameOver, invincible;
+  let strikeTimer, strikePulse, frenzyTimer;
+  let spawnTimer, stageKillTarget, stageKillCount, isBossStage, bossMaxHp;
+  let stageMessageTimer;
+  let keys = {};
+  let dragging = false, dragX = 0, dragY = 0;
+
+  function resetGame(){
+    player = { x: W/2, y: H/2, r: 14, speed: 4.2, facing: 1, aim: 0 };
+    particles = [];
+    powerups = [];
+    groundDots = [];
+    score = 0;
+    lives = 3;
+    maxLives = 3;
+    invincible = 60;
+    frenzyTimer = 0;
+    for(let i=0;i<50;i++){
+      groundDots.push({x:rand(0,W), y:rand(0,H), s:rand(1,2.2)});
+    }
+    updateHUD();
+    initStage(1);
+  }
+
+  function initStage(n){
+    stage = n;
+    enemies = [];
+    strikeTimer = 0;
+    strikePulse = 0;
+    spawnTimer = 0;
+    stageMessageTimer = 100;
+    isBossStage = (n % 10 === 0);
+
+    if(isBossStage){
+      bossMaxHp = 16 + n*1.6;
+      const ang = rand(0,Math.PI*2);
+      enemies.push({
+        type:'boss',
+        x: player.x + Math.cos(ang)*160,
+        y: player.y + Math.sin(ang)*160,
+        r: 26,
+        hp: bossMaxHp,
+        maxHp: bossMaxHp,
+        speed: 1.0 + Math.min(n*0.01, 1.2),
+        score: 300 + n*5,
+        dangerous:true,
+        required:true,
+        lungeTimer: rand(80,140)
+      });
+      stageKillTarget = 1;
+      stageKillCount = 0;
+    } else {
+      stageKillTarget = 5 + Math.min(Math.floor(n/4), 10);
+      stageKillCount = 0;
+    }
+    updateHUD();
+  }
+
+  function updateHUD(){
+    scoreVal.textContent = score;
+    stageVal.textContent = stage;
+    heartsEl.textContent = '❤️'.repeat(Math.max(lives,0)) + '🖤'.repeat(Math.max(maxLives-lives,0));
+  }
+
+  function startGame(){
+    resetGame();
+    running = true;
+    gameOver = false;
+    overlay.classList.add('hidden');
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function endGame(won){
+    running = false;
+    gameOver = true;
+    if(won){
+      overlayTitle.textContent = '100 스테이지 정복! 🏆';
+      overlayText.innerHTML = `사마귀가 모든 곤충 왕국을 정복했습니다!<br>최종 점수 <b style="color:#8fe34a">${score}</b>`;
+      startBtn.textContent = '처음부터 다시';
+    } else {
+      overlayTitle.textContent = 'GAME OVER';
+      overlayText.innerHTML = `최종 점수 <b style="color:#8fe34a">${score}</b><br>도달 스테이지 ${stage}`;
+      startBtn.textContent = '다시 시작';
+    }
+    overlay.classList.remove('hidden');
+  }
+
+  // ---------- input ----------
+  document.addEventListener('keydown', (e)=>{
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)) e.preventDefault();
+    keys[e.code] = true;
+  });
+  document.addEventListener('keyup', (e)=>{ keys[e.code] = false; });
+
+  function getCanvasPos(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (canvas.width/rect.width),
+      y: (clientY - rect.top) * (canvas.height/rect.height)
+    };
+  }
+
+  canvas.addEventListener('touchstart', (e)=>{
+    e.preventDefault();
+    if(!running) return;
+    const t = e.touches[0];
+    const p = getCanvasPos(t.clientX, t.clientY);
+    dragging = true; dragX = p.x; dragY = p.y;
+  }, {passive:false});
+  canvas.addEventListener('touchmove', (e)=>{
+    e.preventDefault();
+    if(!running) return;
+    const t = e.touches[0];
+    const p = getCanvasPos(t.clientX, t.clientY);
+    dragX = p.x; dragY = p.y;
+  }, {passive:false});
+  canvas.addEventListener('touchend', ()=>{ dragging = false; });
+
+  canvas.addEventListener('mousedown', (e)=>{
+    const p = getCanvasPos(e.clientX, e.clientY);
+    dragging = true; dragX = p.x; dragY = p.y;
+  });
+  canvas.addEventListener('mousemove', (e)=>{
+    if(!dragging) return;
+    const p = getCanvasPos(e.clientX, e.clientY);
+    dragX = p.x; dragY = p.y;
+  });
+  window.addEventListener('mouseup', ()=>{ dragging = false; });
+
+  startBtn.addEventListener('click', ()=>{ startGame(); });
+
+  // ---------- spawning ----------
+  function spawnPrey(){
+    const edge = Math.floor(rand(0,4));
+    let x,y;
+    if(edge===0){ x = rand(20,W-20); y = rand(20,H*0.4); }
+    else if(edge===1){ x = rand(20,W-20); y = rand(H*0.6,H-20); }
+    else if(edge===2){ x = rand(20,W*0.3); y = rand(20,H-20); }
+    else { x = rand(W*0.7,W-20); y = rand(20,H-20); }
+
+    const roll = Math.random();
+    let type = 'ant';
+    if(roll > 0.62) type = 'fly';
+    if(roll > 0.85) type = 'beetle';
+
+    let e;
+    if(type === 'ant'){
+      e = { type, x, y, r:9, hp:1, speed: clamp(0.6+stage*0.01,0.6,1.6), score:10, dangerous:false, required:true, wanderAngle:rand(0,Math.PI*2) };
+    } else if(type === 'fly'){
+      e = { type, x, y, r:8, hp:1, speed: clamp(1.5+stage*0.015,1.5,2.8), score:15, dangerous:false, required:true, wanderAngle:rand(0,Math.PI*2) };
+    } else {
+      e = { type, x, y, r:11, hp: stage>=15?2:1, speed: clamp(0.4+stage*0.008,0.4,1.2), score:20, dangerous:false, required:true, wanderAngle:rand(0,Math.PI*2) };
+    }
+    enemies.push(e);
+  }
+
+  function spawnSpider(){
+    const edge = Math.floor(rand(0,4));
+    let x,y;
+    if(edge===0){ x = rand(0,W); y = -20; }
+    else if(edge===1){ x = rand(0,W); y = H+20; }
+    else if(edge===2){ x = -20; y = rand(0,H); }
+    else { x = W+20; y = rand(0,H); }
+    enemies.push({
+      type:'spider', x, y, r:13,
+      hp: 2+Math.floor(stage/20),
+      speed: clamp(1.0+stage*0.01,1.0,2.2),
+      score:40, dangerous:true, required:false
+    });
+  }
+
+  function spawnPowerup(x,y){
+    const roll = Math.random();
+    if(roll < 0.12){ powerups.push({x,y,r:10,type:'heart',life:600}); }
+    else if(roll < 0.22){ powerups.push({x,y,r:10,type:'frenzy',life:600}); }
+  }
+
+  function spawnParticles(x,y,color,count){
+    for(let i=0;i<count;i++){
+      particles.push({
+        x,y,
+        vx: rand(-3,3), vy: rand(-3,3),
+        life: 18+Math.random()*14,
+        color
+      });
+    }
+  }
+
+  // ---------- update ----------
+  let lastTime = 0;
+  function update(delta){
+    const dtScale = delta/16.67;
+    if(invincible > 0) invincible--;
+    if(strikePulse > 0) strikePulse--;
+    if(stageMessageTimer > 0) stageMessageTimer--;
+    if(frenzyTimer > 0) frenzyTimer--;
+
+    // player movement
+    let dx=0, dy=0;
+    if(keys['ArrowLeft']||keys['KeyA']) dx -= 1;
+    if(keys['ArrowRight']||keys['KeyD']) dx += 1;
+    if(keys['ArrowUp']||keys['KeyW']) dy -= 1;
+    if(keys['ArrowDown']||keys['KeyS']) dy += 1;
+    if(dx!==0||dy!==0){
+      const len = Math.hypot(dx,dy);
+      player.x += (dx/len)*player.speed*dtScale;
+      player.y += (dy/len)*player.speed*dtScale;
+      player.aim = Math.atan2(dy,dx);
+      if(dx !== 0) player.facing = dx > 0 ? 1 : -1;
+    } else if(dragging){
+      const ddx = dragX - player.x, ddy = dragY - player.y;
+      const d = Math.hypot(ddx,ddy);
+      if(d > 3){
+        const step = Math.min(d, player.speed*1.7*dtScale);
+        player.x += (ddx/d)*step;
+        player.y += (ddy/d)*step;
+        player.aim = Math.atan2(ddy,ddx);
+        if(Math.abs(ddx) > 2) player.facing = ddx > 0 ? 1 : -1;
+      }
+    }
+    player.x = clamp(player.x, player.r+4, W-player.r-4);
+    player.y = clamp(player.y, player.r+4, H-player.r-4);
+
+    // enemies move
+    for(let i=enemies.length-1;i>=0;i--){
+      const e = enemies[i];
+      const d = dist(e.x,e.y,player.x,player.y);
+
+      if(e.type === 'boss'){
+        e.lungeTimer -= dtScale;
+        let spd = e.speed;
+        if(e.lungeTimer < 20) spd = e.speed*2.4;
+        if(e.lungeTimer <= 0) e.lungeTimer = rand(90,150);
+        if(d > 1){
+          e.x += (player.x-e.x)/d*spd*dtScale;
+          e.y += (player.y-e.y)/d*spd*dtScale;
+        }
+      } else if(e.type === 'spider'){
+        if(d > 1){
+          e.x += (player.x-e.x)/d*e.speed*dtScale;
+          e.y += (player.y-e.y)/d*e.speed*dtScale;
+        }
+      } else {
+        // prey: flee if player close, else wander
+        if(d < 85){
+          if(d > 1){
+            e.x += (e.x-player.x)/d*e.speed*1.15*dtScale;
+            e.y += (e.y-player.y)/d*e.speed*1.15*dtScale;
+          }
+        } else {
+          if(Math.random() < 0.02) e.wanderAngle += rand(-1,1);
+          e.x += Math.cos(e.wanderAngle)*e.speed*0.5*dtScale;
+          e.y += Math.sin(e.wanderAngle)*e.speed*0.5*dtScale;
+        }
+        if(e.x < e.r || e.x > W-e.r) e.wanderAngle = Math.PI - e.wanderAngle;
+        if(e.y < e.r || e.y > H-e.r) e.wanderAngle = -e.wanderAngle;
+      }
+      e.x = clamp(e.x, e.r, W-e.r);
+      e.y = clamp(e.y, e.r, H-e.r);
+
+      // contact damage from dangerous enemies
+      if(e.dangerous && invincible<=0 && dist(e.x,e.y,player.x,player.y) < e.r+player.r*0.65){
+        playerHit();
+      }
+    }
+
+    // strike (melee AoE pulse)
+    strikeTimer -= dtScale;
+    const cooldown = frenzyTimer > 0 ? 9 : 15;
+    if(strikeTimer <= 0){
+      const arr = enemies; // 이번 프레임의 배열을 고정 참조 (스테이지 전환으로 enemies가 재할당돼도 안전)
+      let didHit = false;
+      const strikeRange = player.r + 26;
+      const killedList = [];
+      for(let j=arr.length-1;j>=0;j--){
+        const e = arr[j];
+        if(dist(e.x,e.y,player.x,player.y) < strikeRange + e.r*0.3){
+          e.hp--;
+          didHit = true;
+          spawnParticles((e.x+player.x)/2,(e.y+player.y)/2,'#8fe34a',4);
+          if(e.hp <= 0){
+            killedList.push(e);
+            arr.splice(j,1);
+          }
+        }
+      }
+      if(didHit){
+        strikeTimer = cooldown;
+        strikePulse = 10;
+      }
+      // 배열 순회가 끝난 뒤에 처치 처리(스테이지 전환 포함)를 진행
+      for(const e of killedList){
+        handleKill(e);
+      }
+    }
+
+    // powerups
+    for(let i=powerups.length-1;i>=0;i--){
+      const p = powerups[i];
+      p.life -= dtScale;
+      if(p.life <= 0){ powerups.splice(i,1); continue; }
+      if(dist(p.x,p.y,player.x,player.y) < p.r+player.r){
+        if(p.type === 'heart'){ lives = Math.min(maxLives, lives+1); updateHUD(); }
+        else if(p.type === 'frenzy'){ frenzyTimer = 420; }
+        spawnParticles(p.x,p.y, p.type==='heart' ? '#ff5d5d':'#ffd166', 10);
+        powerups.splice(i,1);
+      }
+    }
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx*dtScale; p.y += p.vy*dtScale;
+      p.vx *= 0.94; p.vy *= 0.94;
+      p.life -= dtScale;
+      if(p.life <= 0) particles.splice(i,1);
+    }
+
+    // spawning (non-boss stages)
+    if(!isBossStage){
+      spawnTimer -= dtScale;
+      const preyOnBoard = enemies.filter(e=>e.required).length;
+      if(spawnTimer <= 0 && stageKillCount < stageKillTarget && preyOnBoard < 6){
+        spawnTimer = Math.max(24, 55 - stage*0.3);
+        spawnPrey();
+      }
+      const spiderCap = Math.min(1+Math.floor(stage/25), 4);
+      const spidersOnBoard = enemies.filter(e=>e.type==='spider').length;
+      if(stage >= 3 && spidersOnBoard < spiderCap && Math.random() < 0.0025*dtScale){
+        spawnSpider();
+      }
+    }
+
+    updateHUD();
+  }
+
+  function handleKill(e){
+    score += e.score;
+    spawnParticles(e.x,e.y, e.dangerous ? '#c084fc' : '#ffd166', 14);
+    spawnPowerup(e.x,e.y);
+    if(e.required){
+      stageKillCount++;
+      if(isBossStage){
+        // boss defeated
+        advanceStage();
+      } else if(stageKillCount >= stageKillTarget){
+        advanceStage();
+      }
+    }
+  }
+
+  function advanceStage(){
+    if(stage >= MAX_STAGE){
+      endGame(true);
+      return;
+    }
+    initStage(stage+1);
+  }
+
+  function playerHit(){
+    if(invincible > 0) return;
+    lives--;
+    invincible = 90;
+    spawnParticles(player.x, player.y, '#ff5d5d', 16);
+    updateHUD();
+    if(lives <= 0){
+      revivePlayer();
+    }
+  }
+
+  function revivePlayer(){
+    lives = maxLives;
+    invincible = 150;
+    spawnParticles(player.x, player.y, '#ffd166', 20);
+    updateHUD();
+  }
+
+  // ---------- draw ----------
+  function drawBackground(){
+    ctx.fillStyle = '#182213';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = 'rgba(143,227,74,0.06)';
+    for(const d of groundDots){
+      ctx.fillRect(d.x, d.y, d.s, d.s);
+    }
+    const grad = ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.75);
+    grad.addColorStop(0,'rgba(0,0,0,0)');
+    grad.addColorStop(1,'rgba(0,0,0,0.45)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  function drawPlayer(){
+    if(invincible > 0 && Math.floor(invincible/5)%2===0){
+      ctx.globalAlpha = 0.35;
+    }
+    const x = player.x, y = player.y;
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(x, y+15, 14, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // strike pulse ring
+    if(strikePulse > 0){
+      ctx.save();
+      ctx.globalAlpha = strikePulse/10*0.5;
+      ctx.strokeStyle = frenzyTimer>0 ? '#ffd166' : '#8fe34a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x,y, player.r+26 - (strikePulse), 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(player.aim);
+
+    // forelegs (flash out on strike)
+    const legExtend = strikePulse > 0 ? 14 : 6;
+    ctx.strokeStyle = '#3f6b2a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(4,-6); ctx.lineTo(10+legExtend,-12);
+    ctx.moveTo(4,6); ctx.lineTo(10+legExtend,12);
+    ctx.stroke();
+
+    // body (abdomen)
+    ctx.fillStyle = '#5c9a3d';
+    ctx.beginPath();
+    ctx.ellipse(-10,0,13,7,0,0,Math.PI*2);
+    ctx.fill();
+
+    // thorax
+    ctx.fillStyle = '#6fb349';
+    ctx.beginPath();
+    ctx.ellipse(3,0,9,6,0,0,Math.PI*2);
+    ctx.fill();
+
+    // head
+    ctx.fillStyle = '#7fc95a';
+    ctx.beginPath();
+    ctx.arc(14,0,6,0,Math.PI*2);
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle = '#1a2a12';
+    ctx.beginPath();
+    ctx.arc(16,-3,1.6,0,Math.PI*2);
+    ctx.arc(16,3,1.6,0,Math.PI*2);
+    ctx.fill();
+
+    // antennae
+    ctx.strokeStyle = '#5c9a3d';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(18,-2); ctx.lineTo(26,-8);
+    ctx.moveTo(18,2); ctx.lineTo(26,8);
+    ctx.stroke();
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawEnemy(e){
+    ctx.save();
+    ctx.translate(e.x, e.y);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, e.r*0.7, e.r*0.8, e.r*0.28, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    if(e.type === 'ant'){
+      ctx.fillStyle = '#8a5a3d';
+      ctx.beginPath(); ctx.ellipse(-4,0,4,3,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(3,0,5,3.4,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(9,0,2.6,0,Math.PI*2); ctx.fill();
+    } else if(e.type === 'fly'){
+      ctx.fillStyle = '#4a4a52';
+      ctx.beginPath(); ctx.ellipse(0,0,5,4,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(200,220,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(-2,-4,4,2.4,0.3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(2,-4,4,2.4,-0.3,0,Math.PI*2); ctx.fill();
+    } else if(e.type === 'beetle'){
+      ctx.fillStyle = '#3d3226';
+      ctx.beginPath(); ctx.ellipse(0,0,e.r*0.75,e.r*0.6,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#1e1810'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0,-e.r*0.6); ctx.lineTo(0,e.r*0.6); ctx.stroke();
+      if(e.hp > 1){
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.font='bold 9px monospace'; ctx.textAlign='center';
+        ctx.fillText(e.hp, 0, e.r+10);
+      }
+    } else if(e.type === 'spider'){
+      ctx.fillStyle = '#7a4a9e';
+      ctx.beginPath(); ctx.arc(0,0,e.r*0.7,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#4a2a6e'; ctx.lineWidth = 2;
+      for(let k=0;k<4;k++){
+        const a = (k/4)*Math.PI*2 + performance.now()/300;
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(Math.cos(a)*e.r*1.3, Math.sin(a)*e.r*1.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(Math.cos(a+Math.PI)*e.r*1.3, Math.sin(a+Math.PI)*e.r*1.3);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#ff5d5d';
+      ctx.beginPath(); ctx.arc(-2,-2,1.4,0,Math.PI*2); ctx.arc(2,-2,1.4,0,Math.PI*2); ctx.fill();
+    } else if(e.type === 'boss'){
+      const pulse = 1+Math.sin(performance.now()/150)*0.04;
+      ctx.scale(pulse,pulse);
+      ctx.fillStyle = '#a83f4f';
+      ctx.beginPath(); ctx.ellipse(0,0,e.r,e.r*0.8,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#5c1f28'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath(); ctx.arc(-e.r*0.3,-e.r*0.2,3,0,Math.PI*2); ctx.arc(e.r*0.3,-e.r*0.2,3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#1a0a0d';
+      ctx.beginPath(); ctx.arc(-e.r*0.3,-e.r*0.2,1.4,0,Math.PI*2); ctx.arc(e.r*0.3,-e.r*0.2,1.4,0,Math.PI*2); ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawPowerup(p){
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    const pulse = 1 + Math.sin(performance.now()/150)*0.08;
+    ctx.scale(pulse,pulse);
+    ctx.fillStyle = p.type==='heart' ? '#ff5d5d' : '#ffd166';
+    ctx.beginPath();
+    ctx.arc(0,0,p.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#0c0f08';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.type==='heart' ? '+' : 'F', 0, 3.5);
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, p.life/28);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,2.4,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawBossBar(){
+    if(!isBossStage || enemies.length===0) return;
+    const boss = enemies.find(e=>e.type==='boss');
+    if(!boss) return;
+    const barW = W*0.7, barH = 10;
+    const bx = (W-barW)/2, by = 12;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bx-2,by-2,barW+4,barH+4);
+    ctx.fillStyle = '#3a1418';
+    ctx.fillRect(bx,by,barW,barH);
+    ctx.fillStyle = '#ff5d5d';
+    ctx.fillRect(bx,by,barW*Math.max(0,boss.hp/boss.maxHp),barH);
+    ctx.fillStyle = '#eef4e6';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOSS', W/2, by+barH+11);
+  }
+
+  function draw(){
+    drawBackground();
+    for(const p of powerups) drawPowerup(p);
+    for(const e of enemies) drawEnemy(e);
+    drawPlayer();
+    drawParticles();
+    drawBossBar();
+
+    if(stageMessageTimer > 0){
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, stageMessageTimer/30);
+      ctx.fillStyle = isBossStage ? '#ff5d5d' : '#8fe34a';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 4;
+      const msg = isBossStage ? `⚠ BOSS STAGE ${stage} ⚠` : `STAGE ${stage}`;
+      ctx.strokeText(msg, W/2, H*0.4);
+      ctx.fillText(msg, W/2, H*0.4);
+      if(!isBossStage){
+        ctx.font = '11px monospace';
+        ctx.fillStyle = '#c3d0b3';
+        ctx.fillText(`곤충 ${stageKillTarget}마리를 사냥하세요`, W/2, H*0.4+22);
+      }
+      ctx.restore();
+    }
+  }
+
+  function loop(t){
+    if(!running) return;
+    const delta = Math.min(t - lastTime, 40);
+    lastTime = t;
+    update(delta);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // initial idle screen
+  resetGame();
+  draw();
+})();
+</script>
+</body>
+</html>

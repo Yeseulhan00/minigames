@@ -13,6 +13,9 @@
 | [거인 사냥꾼](games/giant-hunter.html) | 5단계 보스전. 머리를 맞히면 크리티컬 + 기절 |
 | [백룸즈](games/backrooms.html) | 손전등 하나로 어두운 미로에서 출구 찾기 |
 | [복셀 크래프트](games/voxel-craft.html) | 블록을 부수고 쌓는 3D 샌드박스 |
+| [좀비 서바이버](games/zombie-survivor.html) | 드래그로 이동, 가장 가까운 좀비에게 자동 사격 |
+| [사마귀 헌터](games/mantis-hunter.html) | 100스테이지 곤충 사냥. 10스테이지마다 보스 |
+| [카피바라의 온천 대모험](games/capybara-adventure.html) | 귤을 다 모아 온천으로. 벌은 피해서 |
 
 ### 키우기 · 퍼즐
 | 게임 | 설명 |

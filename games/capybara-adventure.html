@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>카피바라의 온천 대모험</title>
+<style>
+  :root{
+    --moss:#3f5b3f;
+    --moss-deep:#2b4030;
+    --cream:#f6ecd9;
+    --clay:#d97757;
+    --clay-deep:#b85c3f;
+    --water:#5aa9a3;
+    --ink:#2b241c;
+    --sub:#8a7f6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(circle at 20% 0%, #4a6b48 0%, transparent 50%),
+      radial-gradient(circle at 90% 100%, #2f4a3f 0%, transparent 55%),
+      var(--moss-deep);
+    color:var(--cream);
+    font-family:'Trebuchet MS', 'Segoe UI', sans-serif;
+    overflow:hidden;
+    touch-action:none;
+  }
+  .wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    padding:14px 10px 8px;
+  }
+  h1{
+    margin:0 0 2px;
+    font-size:21px;
+    letter-spacing:1px;
+    font-weight:800;
+    color:var(--cream);
+    text-shadow:0 2px 0 rgba(0,0,0,0.25);
+  }
+  h1 span{color:var(--clay);}
+  .tagline{
+    font-size:11px;
+    letter-spacing:2px;
+    color:#c9c2ac;
+    margin-bottom:10px;
+  }
+  .hud{
+    display:flex;
+    gap:10px;
+    width:100%;
+    max-width:480px;
+    margin-bottom:8px;
+    justify-content:space-between;
+  }
+  .hud-item{
+    background:rgba(0,0,0,0.25);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .hud-item b{color:var(--clay);font-size:14px;}
+  #hearts{letter-spacing:2px;font-size:14px;}
+  .board-frame{
+    position:relative;
+    border:3px solid #1c2a1f;
+    border-radius:10px;
+    background:#264530;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.7), inset 0 0 0 2px rgba(255,255,255,0.05);
+    overflow:hidden;
+  }
+  #gameCanvas{
+    display:block;
+  }
+  .overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(20,15,10,0.82);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    text-align:center;
+    padding:20px;
+  }
+  .overlay.hidden{display:none;}
+  .overlay .big{
+    font-size:22px;
+    letter-spacing:1px;
+    color:var(--clay);
+    font-weight:800;
+  }
+  .overlay .small{
+    font-size:12px;
+    color:#d9d2bd;
+    line-height:1.7;
+    max-width:260px;
+  }
+  .btn{
+    margin-top:6px;
+    background:var(--clay);
+    color:#241a12;
+    border:none;
+    padding:11px 26px;
+    font-family:inherit;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:1px;
+    border-radius:24px;
+    cursor:pointer;
+    box-shadow:0 4px 0 var(--clay-deep);
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--clay-deep);}
+  .controls-hint{
+    display:none;
+    font-size:11px;
+    color:#b9b09a;
+    margin-top:10px;
+    letter-spacing:0.5px;
+    text-align:center;
+  }
+  @media (min-width:640px){
+    .controls-hint{display:block;}
+  }
+  .touch-controls{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-top:16px;
+    width:100%;
+    max-width:340px;
+  }
+  .dpad{
+    position:relative;
+    width:150px;
+    height:150px;
+  }
+  .dbtn{
+    position:absolute;
+    width:50px;
+    height:50px;
+    background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:10px;
+    color:var(--cream);
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .dbtn:active{background:var(--clay);color:#241a12;}
+  #dUp{top:0;left:50px;}
+  #dDown{top:100px;left:50px;}
+  #dLeft{top:50px;left:0;}
+  #dRight{top:50px;left:100px;}
+  .home{
+    position:fixed; left:10px; bottom:10px; z-index:20;
+    font-size:11px; text-decoration:none;
+    color:#b9b09a; background:rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+    padding:5px 10px;
+  }
+  .home:hover{ color:var(--cream); border-color:var(--clay); }
+</style>
+</head>
+<body>
+<a class="home" href="../index.html">← 목록으로</a>
+<div class="wrap">
+  <h1>카피바라의 <span>온천</span> 대모험</h1>
+  <div class="tagline">CAPYBARA HOT SPRING QUEST</div>
+
+  <div class="hud">
+    <div class="hud-item">🍊 <b id="mikanVal">0</b>/<span id="mikanTotal">0</span></div>
+    <div class="hud-item">스테이지 <b id="stageVal">1</b></div>
+    <div class="hud-item" id="hearts">❤️❤️❤️❤️❤️</div>
+  </div>
+
+  <div class="board-frame">
+    <canvas id="gameCanvas"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="big" id="overlayTitle">카피바라의 온천 대모험</div>
+      <div class="small" id="overlayText">
+        귤을 모두 모아서 온천으로 들어가세요!<br>
+        벌을 피하고 느긋하게 탐험하세요 🐝<br><br>
+        방향키 또는 아래 버튼으로 이동
+      </div>
+      <button class="btn" id="startBtn">모험 시작</button>
+    </div>
+  </div>
+
+  <div class="controls-hint">방향키 또는 WASD로 이동 · 온천에 닿으면 스테이지 클리어</div>
+
+  <div class="touch-controls">
+    <div class="dpad">
+      <button class="dbtn" id="dUp">▲</button>
+      <button class="dbtn" id="dLeft">◀</button>
+      <button class="dbtn" id="dRight">▶</button>
+      <button class="dbtn" id="dDown">▼</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const startBtn = document.getElementById('startBtn');
+  const mikanVal = document.getElementById('mikanVal');
+  const mikanTotal = document.getElementById('mikanTotal');
+  const stageVal = document.getElementById('stageVal');
+  const heartsEl = document.getElementById('hearts');
+
+  let W = 460, H = 520;
+  function resize(){
+    const maxW = Math.min(window.innerWidth - 24, 460);
+    const maxH = window.innerHeight - 300;
+    const scale = Math.min(maxW/460, Math.max(maxH,260)/520, 1);
+    W = Math.floor(460*scale);
+    H = Math.floor(520*scale);
+    canvas.width = W;
+    canvas.height = H;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ---------- game state ----------
+  let stage, lives, score, mikans, bees, rocks, onsen, player, keys, running, gameOver, stageClear, invincible, particles, reviveTimer;
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
+
+  function initStage(n){
+    stage = n;
+    const world = { w: W, h: H };
+    player = { x: W*0.5, y: H*0.85, r: 16, speed: 3, dir: 'down', anim:0 };
+    mikans = [];
+    bees = [];
+    rocks = [];
+    invincible = 0;
+    reviveTimer = 0;
+    particles = [];
+
+    const mikanCount = 4 + Math.min(n, 4);
+    const beeCount = Math.min(Math.floor(n/2), 4);
+    const rockCount = 2 + Math.min(n, 3);
+
+    // onsen goal near top
+    onsen = { x: W*0.5, y: 70, r: 46 };
+
+    function farFromOnsenAndPlayer(x,y,minD){
+      if(dist(x,y,onsen.x,onsen.y) < 90) return false;
+      if(dist(x,y,player.x,player.y) < 100) return false;
+      return true;
+    }
+
+    for(let i=0;i<rockCount;i++){
+      let x,y,tries=0;
+      do{
+        x = rand(30, W-30); y = rand(150, H-60); tries++;
+      } while(!farFromOnsenAndPlayer(x,y,40) && tries<50);
+      rocks.push({x,y,r: rand(14,20)});
+    }
+
+    // BFS로 실제 카피바라가 이동 가능한 칸만 찾아서 그 안에서만 귤을 배치 (돌에 막혀 못 먹는 문제 방지)
+    const GRID = 20;
+    const minX = 25, maxX = W-25, minY = 115, maxY = H-35;
+    const cols = Math.max(1, Math.floor((maxX-minX)/GRID));
+    const rowsN = Math.max(1, Math.floor((maxY-minY)/GRID));
+    const cellPos = (i,j)=>({x:minX+i*GRID, y:minY+j*GRID});
+    const blockedCell = (i,j)=>{
+      const p = cellPos(i,j);
+      for(const r of rocks){
+        if(dist(p.x,p.y,r.x,r.y) < r.r + player.r*0.7 + 8) return true;
+      }
+      return false;
+    };
+    const startI = Math.max(0, Math.min(cols, Math.round((player.x-minX)/GRID)));
+    const startJ = Math.max(0, Math.min(rowsN, Math.round((player.y-minY)/GRID)));
+    const visited = new Set();
+    const reachable = [];
+    if(!blockedCell(startI,startJ)){
+      const queue = [[startI,startJ]];
+      visited.add(startI+','+startJ);
+      while(queue.length){
+        const [ci,cj] = queue.shift();
+        reachable.push(cellPos(ci,cj));
+        const neighbors = [[ci+1,cj],[ci-1,cj],[ci,cj+1],[ci,cj-1]];
+        for(const [ni,nj] of neighbors){
+          if(ni<0||nj<0||ni>cols||nj>rowsN) continue;
+          const key = ni+','+nj;
+          if(visited.has(key)) continue;
+          if(blockedCell(ni,nj)) continue;
+          visited.add(key);
+          queue.push([ni,nj]);
+        }
+      }
+    }
+
+    // 온천/시작지점과 너무 가까운 칸 제외 + 랜덤 셔플
+    let candidates = reachable.filter(p=>farFromOnsenAndPlayer(p.x,p.y,0));
+    for(let i=candidates.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [candidates[i],candidates[j]]=[candidates[j],candidates[i]];
+    }
+
+    const placed = [];
+    for(const c of candidates){
+      if(placed.length >= mikanCount) break;
+      if(placed.every(p=>dist(p.x,p.y,c.x,c.y) > 34)){
+        placed.push(c);
+      }
+    }
+    // 후보가 부족하면 간격 조건을 풀고 채움
+    if(placed.length < mikanCount){
+      for(const c of candidates){
+        if(placed.length >= mikanCount) break;
+        if(!placed.some(p=>p.x===c.x && p.y===c.y)) placed.push(c);
+      }
+    }
+    for(const p of placed){
+      mikans.push({x:p.x, y:p.y, r:9, taken:false, bob:Math.random()*Math.PI*2});
+    }
+
+    for(let i=0;i<beeCount;i++){
+      let x,y;
+      x = rand(40, W-40); y = rand(140, H-80);
+      bees.push({
+        x,y,
+        baseX:x, baseY:y,
+        angle: Math.random()*Math.PI*2,
+        radius: rand(20,45),
+        speed: rand(0.012,0.02) + n*0.001,
+        r: 7
+      });
+    }
+
+    mikanVal.textContent = 0;
+    mikanTotal.textContent = mikanCount;
+    stageVal.textContent = stage;
+    updateHearts();
+    keys = {};
+    gameOver = false;
+    stageClear = false;
+  }
+
+  function updateHearts(){
+    heartsEl.textContent = '❤️'.repeat(Math.max(lives,0)) + '🖤'.repeat(Math.max(5-lives,0));
+  }
+
+  function startGame(){
+    lives = 5;
+    score = 0;
+    initStage(1);
+    running = true;
+    overlay.classList.add('hidden');
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function nextStage(){
+    initStage(stage+1);
+    overlay.classList.add('hidden');
+    running = true;
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function hitPlayer(){
+    if(invincible > 0) return;
+    lives--;
+    invincible = 150;
+    updateHearts();
+    spawnParticles(player.x, player.y, '#ff5d5d', 10);
+    if(lives <= 0){
+      revivePlayer();
+    }
+  }
+
+  function revivePlayer(){
+    // 죽은 자리에서 그대로 부활 (스테이지/위치 초기화 없음)
+    lives = 5;
+    invincible = 200;
+    reviveTimer = 90;
+    updateHearts();
+    spawnParticles(player.x, player.y, '#ffd166', 20);
+  }
+
+  function spawnParticles(x,y,color,count){
+    for(let i=0;i<count;i++){
+      particles.push({
+        x,y,
+        vx: rand(-2,2), vy: rand(-3,-0.5),
+        life: 30+Math.random()*20,
+        color
+      });
+    }
+  }
+
+  function endGame(won){
+    running = false;
+    gameOver = true;
+    if(won){
+      overlayTitle.textContent = '온천 완주 성공! 🎉';
+      overlayText.innerHTML = `카피바라가 세상의 모든 온천을 정복했어요!<br>최종 점수 <b style="color:#d97757">${score}</b> · 스테이지 ${stage}`;
+      startBtn.textContent = '처음부터 다시';
+    } else {
+      overlayTitle.textContent = '게임 오버';
+      overlayText.innerHTML = `벌에게 너무 많이 쏘였어요...<br>점수 <b style="color:#d97757">${score}</b> · 스테이지 ${stage}`;
+      startBtn.textContent = '다시 시작';
+    }
+    overlay.classList.remove('hidden');
+  }
+
+  function stageClearScreen(){
+    running = false;
+    stageClear = true;
+    overlayTitle.textContent = `스테이지 ${stage} 클리어!`;
+    overlayText.innerHTML = `느긋하게 온천을 즐기는 중... ♨️<br>점수 <b style="color:#d97757">${score}</b>`;
+    startBtn.textContent = '다음 스테이지';
+    overlay.classList.remove('hidden');
+  }
+
+  // ---------- input ----------
+  document.addEventListener('keydown', (e)=>{
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(e.code)) e.preventDefault();
+    keys[e.code] = true;
+  });
+  document.addEventListener('keyup', (e)=>{
+    keys[e.code] = false;
+  });
+
+  function bindDpad(el, code){
+    const down = (e)=>{ e.preventDefault(); keys[code] = true; };
+    const up = (e)=>{ e.preventDefault(); keys[code] = false; };
+    el.addEventListener('touchstart', down, {passive:false});
+    el.addEventListener('touchend', up);
+    el.addEventListener('touchcancel', up);
+    el.addEventListener('mousedown', down);
+    el.addEventListener('mouseup', up);
+    el.addEventListener('mouseleave', up);
+  }
+  bindDpad(document.getElementById('dUp'), 'ArrowUp');
+  bindDpad(document.getElementById('dDown'), 'ArrowDown');
+  bindDpad(document.getElementById('dLeft'), 'ArrowLeft');
+  bindDpad(document.getElementById('dRight'), 'ArrowRight');
+
+  startBtn.addEventListener('click', ()=>{
+    if(gameOver){ startGame(); }
+    else if(stageClear){ nextStage(); }
+    else { startGame(); }
+  });
+
+  // ---------- update ----------
+  let lastTime = 0;
+  function update(delta){
+    if(invincible > 0) invincible--;
+    if(reviveTimer > 0) reviveTimer--;
+
+    let dx=0, dy=0;
+    if(keys['ArrowUp']||keys['KeyW']) dy -= 1;
+    if(keys['ArrowDown']||keys['KeyS']) dy += 1;
+    if(keys['ArrowLeft']||keys['KeyA']) dx -= 1;
+    if(keys['ArrowRight']||keys['KeyD']) dx += 1;
+
+    if(dx!==0 || dy!==0){
+      const len = Math.hypot(dx,dy);
+      dx/=len; dy/=len;
+      const nx = player.x + dx*player.speed*(delta/16.67);
+      const ny = player.y + dy*player.speed*(delta/16.67);
+
+      let blocked = false;
+      for(const r of rocks){
+        if(dist(nx,ny,r.x,r.y) < r.r + player.r*0.7){ blocked = true; break; }
+      }
+      if(!blocked){
+        player.x = Math.max(player.r, Math.min(W-player.r, nx));
+        player.y = Math.max(player.r, Math.min(H-player.r, ny));
+      }
+      player.anim += 0.25;
+      if(Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : 'left';
+      else player.dir = dy > 0 ? 'down' : 'up';
+    }
+
+    // mikan pickup
+    for(const m of mikans){
+      if(!m.taken && dist(player.x,player.y,m.x,m.y) < player.r + m.r){
+        m.taken = true;
+        score += 50;
+        mikanVal.textContent = parseInt(mikanVal.textContent) + 1;
+        spawnParticles(m.x,m.y,'#ffb347',8);
+      }
+    }
+
+    // bee movement (orbit around base point)
+    for(const b of bees){
+      b.angle += b.speed * (delta/16.67);
+      b.x = b.baseX + Math.cos(b.angle)*b.radius;
+      b.y = b.baseY + Math.sin(b.angle)*b.radius*0.6;
+      b.x = Math.max(20, Math.min(W-20, b.x));
+      b.y = Math.max(110, Math.min(H-30, b.y));
+      if(dist(player.x,player.y,b.x,b.y) < player.r*0.55 + b.r*0.7){
+        hitPlayer();
+      }
+    }
+
+    // onsen check
+    const allTaken = mikans.every(m=>m.taken);
+    if(allTaken && dist(player.x,player.y,onsen.x,onsen.y) < onsen.r*0.6 + player.r*0.3){
+      score += 100;
+      stageClearScreen();
+    }
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life--;
+      if(p.life <= 0) particles.splice(i,1);
+    }
+  }
+
+  // ---------- draw ----------
+  function drawBackground(){
+    ctx.fillStyle = '#3f5b3f';
+    ctx.fillRect(0,0,W,H);
+    // grass texture dots
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    for(let i=0;i<40;i++){
+      const gx = (i*97)%W, gy = (i*53)%H;
+      ctx.fillRect(gx, gy, 3, 3);
+    }
+    // path
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.beginPath();
+    ctx.ellipse(W*0.5, H*0.55, W*0.28, H*0.42, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawOnsen(){
+    const allTaken = mikans.every(m=>m.taken);
+    ctx.save();
+    ctx.translate(onsen.x, onsen.y);
+    // steam
+    if(allTaken){
+      for(let i=0;i<3;i++){
+        const t = (performance.now()/500 + i) % 3;
+        ctx.globalAlpha = 0.25 * (1-t/3);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(-14+i*14, -20 - t*18, 8, 12, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = allTaken ? '#6fc2bb' : '#4a8783';
+    ctx.beginPath();
+    ctx.ellipse(0,0,onsen.r,onsen.r*0.62,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#2b4030';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(-onsen.r*0.3,-onsen.r*0.15,onsen.r*0.35,onsen.r*0.15,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = '#e8dcc0';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(allTaken ? '들어가세요! ♨️' : '귤을 모두 모으세요', onsen.x, onsen.y + onsen.r*0.62 + 16);
+  }
+
+  function drawRock(r){
+    ctx.fillStyle = '#5c5449';
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y, r.r, r.r*0.8, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(r.x-r.r*0.3, r.y-r.r*0.3, r.r*0.35, r.r*0.25, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y+r.r*0.75, r.r*0.9, r.r*0.25, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawMikan(m){
+    if(m.taken) return;
+    const bob = Math.sin(performance.now()/300 + m.bob) * 2;
+    ctx.save();
+    ctx.translate(m.x, m.y+bob);
+    ctx.fillStyle = '#ff9f40';
+    ctx.beginPath();
+    ctx.arc(0,0,m.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#3f5b3f';
+    ctx.fillRect(-1.5,-m.r-3,3,4);
+    ctx.restore();
+  }
+
+  function drawBee(b){
+    ctx.save();
+    ctx.translate(b.x,b.y);
+    const wingFlap = Math.sin(performance.now()/40)*3;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(-6, -4+wingFlap*0.3, 5, 3, 0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(6, -4-wingFlap*0.3, 5, 3, -0.3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#f2c94c';
+    ctx.beginPath();
+    ctx.ellipse(0,0,b.r,b.r*0.75,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#2b241c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-b.r*0.5,-2); ctx.lineTo(-b.r*0.5,4);
+    ctx.moveTo(0,-3); ctx.lineTo(0,4.5);
+    ctx.moveTo(b.r*0.5,-2); ctx.lineTo(b.r*0.5,4);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCapybara(){
+    if(invincible > 0 && Math.floor(invincible/6)%2===0){
+      ctx.globalAlpha = 0.4;
+    }
+    const x = player.x, y = player.y;
+    const bob = Math.sin(player.anim)*1.5;
+    ctx.save();
+    ctx.translate(x, y + bob);
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 14, 15, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    const flip = player.dir === 'left' ? -1 : 1;
+    ctx.scale(flip, 1);
+
+    // body
+    ctx.fillStyle = '#a9825a';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 17, 13, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // head
+    ctx.fillStyle = '#b8916a';
+    ctx.beginPath();
+    ctx.ellipse(11, -4, 10, 9, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // ears
+    ctx.fillStyle = '#8a6845';
+    ctx.beginPath();
+    ctx.ellipse(6, -11, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(15, -11, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // snout
+    ctx.fillStyle = '#c9a678';
+    ctx.beginPath();
+    ctx.ellipse(18, -1, 4.5, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // nose + mouth
+    ctx.fillStyle = '#3b2f22';
+    ctx.beginPath();
+    ctx.ellipse(21, -3, 1.3, 1, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // eye
+    ctx.fillStyle = '#2b241c';
+    ctx.beginPath();
+    ctx.arc(13, -6, 1.4, 0, Math.PI*2);
+    ctx.fill();
+
+    // legs (simple bob)
+    const legOffset = Math.sin(player.anim*2)*2;
+    ctx.fillStyle = '#8a6845';
+    ctx.fillRect(-10, 9, 4, 5+legOffset*0.3);
+    ctx.fillRect(4, 9, 4, 5-legOffset*0.3);
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, p.life/40);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,3,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function draw(){
+    drawBackground();
+    drawOnsen();
+    for(const r of rocks) drawRock(r);
+    for(const m of mikans) drawMikan(m);
+    for(const b of bees) drawBee(b);
+    drawCapybara();
+    drawParticles();
+    if(reviveTimer > 0){
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, reviveTimer/30);
+      ctx.fillStyle = '#ffd166';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+      ctx.lineWidth = 3;
+      ctx.strokeText('부활! ♨️', W/2, H/2 - 40);
+      ctx.fillText('부활! ♨️', W/2, H/2 - 40);
+      ctx.restore();
+    }
+  }
+
+  function loop(t){
+    if(!running) return;
+    const delta = Math.min(t - lastTime, 40);
+    lastTime = t;
+    update(delta);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // initial idle draw
+  lives = 5; score = 0;
+  initStage(1);
+  draw();
+})();
+</script>
+</body>
+</html>
