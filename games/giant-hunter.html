@@ -2,591 +2,1842 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>거인 사냥꾼 - 스테이지 모드</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>거인 사냥꾼 3D - 스테이지 모드</title>
 <style>
-  html, body {
-    margin: 0; padding: 0; overflow: hidden;
-    background: radial-gradient(circle at 50% 30%, #2b3a55 0%, #10131f 70%);
-    font-family: 'Segoe UI', sans-serif;
-    cursor: crosshair;
+  :root{
+    --hp:#4dff88; --hp2:#4dd2ff;
+    --boss:#ff4d4d; --boss2:#ff9a4d;
+    --gold:#ffd45e;
   }
-  canvas { display: block; }
-  #hud {
-    position: absolute; top: 0; left: 0; width: 100%;
-    padding: 16px; box-sizing: border-box;
-    color: #fff; pointer-events: none;
-    display: flex; justify-content: space-between; align-items: flex-start;
-  }
-  #playerInfo, #giantInfo { text-shadow: 0 2px 4px rgba(0,0,0,0.7); }
-  .homeLink {
-    display: inline-block; margin-bottom: 6px;
-    color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px;
-    pointer-events: auto; cursor: pointer;
-  }
-  .homeLink:hover { color: #fff; }
-  .barBg {
-    width: 260px; height: 18px; background: rgba(0,0,0,0.5);
-    border: 2px solid #fff; border-radius: 9px; overflow: hidden; margin-top: 4px;
-  }
-  #giantBar { height: 100%; background: linear-gradient(90deg,#ff4d4d,#ff8a4d); width: 100%; transition: width 0.15s; }
-  #playerBar { height: 100%; background: linear-gradient(90deg,#4dff88,#4dd2ff); width: 100%; transition: width 0.15s; }
-  #ammoInfo { font-size: 20px; font-weight: bold; margin-top: 8px; }
-  #stageTitle { font-size: 22px; font-weight: 900; }
-  #giantName { font-size: 18px; opacity: 0.9; }
-  #stageBanner {
-    position: absolute; top: 50px; left: 50%; transform: translate(-50%, -30px);
-    color: #fff; font-size: 34px; font-weight: 900; text-align: center;
-    text-shadow: 0 0 16px rgba(255,200,80,0.8), 0 4px 8px rgba(0,0,0,0.8);
-    opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none;
-  }
-  #stageBanner.show { opacity: 1; transform: translate(-50%, 0); }
-  #centerMsg {
-    position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
-    color: #fff; font-size: 46px; font-weight: 900; text-align: center;
-    text-shadow: 0 0 20px rgba(255,80,80,0.9), 0 4px 8px rgba(0,0,0,0.8);
-    display: none; pointer-events: none;
-  }
-  #subMsg {
-    position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%);
-    color: #ffdd88; font-size: 20px; text-align: center;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.9); display: none; pointer-events: none;
-  }
-  #actionBtn {
-    display: none; position: absolute; top: 55%; left: 50%; transform: translateX(-50%);
-    padding: 12px 28px; font-size: 20px; font-weight: bold; cursor: pointer;
-    background: #ff4d4d; color: #fff; border: none; border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  }
-  #instructions {
-    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-    color: rgba(255,255,255,0.75); font-size: 14px; text-align: center;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none;
-  }
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#05070d;
+    font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#fff;user-select:none;}
+  canvas{display:block;}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
+
+  .panel{position:absolute;text-shadow:0 2px 6px rgba(0,0,0,.85);}
+  #left{left:22px;bottom:22px;}
+  #stageTitle{font-size:13px;letter-spacing:3px;color:#9fb4d8;font-weight:700;margin-bottom:6px;}
+  #hpLabel{font-size:12px;letter-spacing:2px;opacity:.8;margin-bottom:4px;}
+  .barBg{width:280px;height:14px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);
+    border-radius:8px;overflow:hidden;position:relative;box-shadow:0 3px 12px rgba(0,0,0,.6);}
+  .barGhost{position:absolute;inset:0;width:100%;background:rgba(255,255,255,.35);transition:width .55s ease-out .18s;}
+  .barFill{position:absolute;inset:0;width:100%;transition:width .12s linear;}
+  #playerBar{background:linear-gradient(90deg,var(--hp),var(--hp2));}
+  #hpNum{font-size:26px;font-weight:900;margin-top:2px;}
+  #hpNum small{font-size:13px;opacity:.6;font-weight:600;}
+
+  #right{right:26px;bottom:22px;text-align:right;}
+  #ammo{font-size:44px;font-weight:900;line-height:1;letter-spacing:-1px;}
+  #ammo .mag{font-size:20px;opacity:.55;font-weight:700;}
+  #ammo.low{color:#ff7b6b;}
+  #reloadHint{font-size:13px;color:var(--gold);letter-spacing:1px;height:18px;opacity:0;transition:opacity .2s;}
+  #reloadHint.show{opacity:1;}
+  #reloadRing{width:56px;height:56px;margin-left:auto;margin-top:6px;opacity:0;transition:opacity .15s;}
+  #reloadRing.show{opacity:1;}
+
+  /* 보스 바 */
+  #boss{position:absolute;top:26px;left:50%;transform:translateX(-50%);width:min(620px,64vw);text-align:center;
+    opacity:0;transition:opacity .4s;}
+  #boss.show{opacity:1;}
+  #bossName{font-size:17px;font-weight:800;letter-spacing:4px;margin-bottom:6px;
+    text-shadow:0 0 14px rgba(255,90,60,.8),0 2px 6px #000;}
+  #bossBarBg{width:100%;height:16px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);
+    border-radius:3px;overflow:hidden;position:relative;box-shadow:0 4px 18px rgba(0,0,0,.7);}
+  #bossGhost{position:absolute;inset:0;background:rgba(255,255,255,.4);transition:width .5s ease-out .2s;}
+  #bossBar{position:absolute;inset:0;background:linear-gradient(90deg,var(--boss),var(--boss2));transition:width .1s linear;}
+  #bossPips{position:absolute;inset:0;display:flex;}
+  #bossPips i{flex:1;border-right:1px solid rgba(0,0,0,.55);}
+  #bossPips i:last-child{border:none;}
+  #bossSub{font-size:12px;letter-spacing:2px;opacity:.6;margin-top:5px;}
+
+  /* 조준점 */
+  #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;}
+  #cross div{position:absolute;background:rgba(255,255,255,.9);box-shadow:0 0 3px rgba(0,0,0,.9);
+    transition:transform .08s ease-out;}
+  #cross .v{width:2px;height:9px;left:18px;}
+  #cross .h{height:2px;width:9px;top:18px;}
+  #cT{top:0}  #cB{bottom:0} #cL{left:0} #cR{right:0}
+  #cDot{width:3px;height:3px;left:17.5px;top:17.5px;border-radius:50%;background:rgba(255,255,255,.55);}
+  #cross.spread .v,#cross.spread .h{transform:scale(1.9);}
+
+  #hitmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);width:34px;height:34px;
+    opacity:0;pointer-events:none;}
+  #hitmark svg{width:100%;height:100%;}
+  #hitmark.pop{animation:hm .28s ease-out;}
+  @keyframes hm{0%{opacity:1;transform:translate(-50%,-50%) scale(.55)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
+
+  /* 화면 효과 */
+  #vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.72) 100%);}
+  #hurt{position:absolute;inset:0;opacity:0;transition:opacity .35s;
+    background:radial-gradient(ellipse at center,transparent 30%,rgba(190,15,15,.85) 100%);}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0;transition:opacity .28s;}
+
+  /* 배너 / 메시지 */
+  #banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-14px);text-align:center;
+    opacity:0;transition:opacity .45s,transform .45s;}
+  #banner.show{opacity:1;transform:translate(-50%,0);}
+  #banner .b1{font-size:14px;letter-spacing:8px;color:var(--gold);font-weight:700;}
+  #banner .b2{font-size:44px;font-weight:900;letter-spacing:2px;
+    text-shadow:0 0 26px rgba(255,150,60,.75),0 4px 12px rgba(0,0,0,.9);}
+  #banner .line{width:0;height:2px;margin:10px auto 0;background:linear-gradient(90deg,transparent,var(--gold),transparent);
+    transition:width .6s .15s;}
+  #banner.show .line{width:340px;}
+
+  #modal{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,rgba(6,9,16,.55),rgba(3,4,8,.93));pointer-events:auto;}
+  #modal.on{display:flex;}
+  #mTitle{font-size:52px;font-weight:900;letter-spacing:2px;text-align:center;
+    text-shadow:0 0 34px rgba(255,120,60,.7),0 6px 16px rgba(0,0,0,.9);}
+  #mSub{font-size:17px;color:#c8d4ea;margin-top:12px;text-align:center;line-height:1.7;}
+  #mStats{display:flex;gap:34px;margin-top:26px;}
+  #mStats div{text-align:center;}
+  #mStats b{display:block;font-size:30px;font-weight:900;color:var(--gold);}
+  #mStats span{font-size:11px;letter-spacing:2px;opacity:.6;}
+  #btn{margin-top:34px;padding:15px 46px;font-size:19px;font-weight:800;letter-spacing:2px;cursor:pointer;
+    color:#0d0f16;background:linear-gradient(180deg,#ffe08a,#f0a83c);border:none;border-radius:6px;
+    box-shadow:0 8px 26px rgba(255,170,60,.35);transition:transform .12s,box-shadow .12s;font-family:inherit;}
+  #btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,170,60,.5);}
+
+  /* 시작 화면 */
+  #start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 40%,#1b2740,#05070d 75%);pointer-events:auto;cursor:pointer;z-index:20;}
+  #start h1{font-size:60px;font-weight:900;letter-spacing:6px;margin:0;
+    background:linear-gradient(180deg,#fff,#ffb457);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 6px 20px rgba(255,140,40,.35));}
+  #start h2{font-size:15px;letter-spacing:12px;color:#7f92b5;margin:6px 0 44px;font-weight:600;}
+  .keys{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:620px;}
+  .key{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:8px;
+    padding:12px 18px;font-size:13px;color:#c3d0e6;min-width:112px;text-align:center;}
+  .key b{display:block;font-size:16px;color:#fff;margin-bottom:4px;letter-spacing:1px;}
+  #startCta{margin-top:46px;font-size:19px;font-weight:800;letter-spacing:3px;color:var(--gold);
+    animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+  #loading{position:absolute;bottom:28px;font-size:13px;color:#5f6f8c;letter-spacing:2px;}
+
+  #dmgTag{position:absolute;left:0;top:0;pointer-events:none;}
+  #homeLink{position:absolute;top:14px;left:18px;z-index:30;pointer-events:auto;
+    color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;letter-spacing:1px;
+    background:rgba(6,10,18,.45);padding:7px 13px;border-radius:7px;
+    border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(4px);}
+  #homeLink:hover{color:#fff;background:rgba(6,10,18,.7);}
+
+  #gPointer{position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;
+    text-align:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));}
+  #gPointer span{display:block;font-size:26px;line-height:1;color:#ff6a4d;}
+  #gPointer em{display:block;font-size:10px;letter-spacing:2px;font-style:normal;color:#ffb9a6;}
+
+  #toast{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-size:15px;letter-spacing:2px;
+    color:var(--gold);opacity:0;transition:opacity .3s;text-shadow:0 2px 8px #000;}
+  #toast.show{opacity:1;}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+
 <div id="hud">
-  <div id="playerInfo">
-    <a class="homeLink" href="../index.html">← 목록으로</a>
-    <div id="stageTitle">STAGE 1 / 5</div>
-    <div>내 체력</div>
-    <div class="barBg"><div id="playerBar"></div></div>
-    <div id="ammoInfo">🔫 탄창: 6 / 6</div>
+  <a id="homeLink" href="../index.html">← 목록으로</a>
+  <div id="vignette"></div>
+  <div id="hurt"></div>
+  <div id="flash"></div>
+
+  <div id="cross">
+    <div class="v" id="cT"></div><div class="v" id="cB"></div>
+    <div class="h" id="cL"></div><div class="h" id="cR"></div>
+    <div id="cDot"></div>
   </div>
-  <div id="giantInfo" style="text-align:right;">
-    <div id="giantName">거인</div>
-    <div class="barBg"><div id="giantBar"></div></div>
+  <div id="hitmark">
+    <svg viewBox="0 0 34 34"><g stroke="#fff" stroke-width="3" stroke-linecap="round">
+      <path d="M6 6 L12 12"/><path d="M28 6 L22 12"/><path d="M6 28 L12 22"/><path d="M28 28 L22 22"/>
+    </g></svg>
+  </div>
+
+  <div id="boss">
+    <div id="bossName">거인</div>
+    <div id="bossBarBg">
+      <div id="bossGhost"></div>
+      <div id="bossBar"></div>
+      <div id="bossPips"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div id="bossSub">약점: 머리</div>
+  </div>
+
+  <div class="panel" id="left">
+    <div id="stageTitle">STAGE 1 / 5</div>
+    <div id="hpLabel">체력</div>
+    <div class="barBg"><div class="barGhost" id="playerGhost"></div><div class="barFill" id="playerBar"></div></div>
+    <div id="hpNum">100<small> / 100</small></div>
+  </div>
+
+  <div class="panel" id="right">
+    <div id="reloadHint">R — 재장전</div>
+    <div id="ammo">6<span class="mag"> / 6</span></div>
+    <svg id="reloadRing" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="4"/>
+      <circle id="reloadArc" cx="20" cy="20" r="16" fill="none" stroke="#ffd45e" stroke-width="4"
+              stroke-linecap="round" stroke-dasharray="100.5" stroke-dashoffset="100.5"
+              transform="rotate(-90 20 20)"/>
+    </svg>
+  </div>
+
+  <div id="banner"><div class="b1" id="bTop">STAGE 1</div><div class="b2" id="bMain">작은 거인</div><div class="line"></div></div>
+  <div id="toast"></div>
+  <div id="dmgTag"></div>
+  <div id="gPointer"><span>▲</span><em>거인</em></div>
+
+  <div id="modal">
+    <div id="mTitle"></div>
+    <div id="mSub"></div>
+    <div id="mStats">
+      <div><b id="sAcc">0%</b><span>명중률</span></div>
+      <div><b id="sCrit">0</b><span>헤드샷</span></div>
+      <div><b id="sTime">0:00</b><span>시간</span></div>
+    </div>
+    <button id="btn">다음 단계</button>
   </div>
 </div>
-<div id="stageBanner"></div>
-<div id="centerMsg"></div>
-<div id="subMsg"></div>
-<button id="actionBtn">다음 단계</button>
-<div id="instructions">마우스로 조준, 클릭으로 발사 · R 키로 재장전 · 머리를 맞히면 크리티컬 + 기절!</div>
 
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-resize();
-window.addEventListener('resize', resize);
+<div id="start">
+  <h1>거인 사냥꾼</h1>
+  <h2>3 D &nbsp; H U N T E R</h2>
+  <div class="keys">
+    <div class="key"><b>W A S D</b>이동</div>
+    <div class="key"><b>SHIFT</b>전력 질주</div>
+    <div class="key"><b>SPACE</b>회피 대시</div>
+    <div class="key"><b>마우스</b>조준 / 발사</div>
+    <div class="key"><b>R</b>재장전</div>
+    <div class="key"><b>ESC</b>일시정지</div>
+  </div>
+  <div id="startCta">화면을 클릭하여 사냥 시작</div>
+  <div id="loading">엔진 불러오는 중…</div>
+</div>
 
-// ---------- 스테이지 설정 ----------
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* 포스트프로세싱은 선택 사항 — 실패해도 게임은 그대로 돌아간다 */
+let EffectComposer, RenderPass, UnrealBloomPass, OutputPass, hasPost = false;
+try {
+  ({ EffectComposer } = await import('three/addons/postprocessing/EffectComposer.js'));
+  ({ RenderPass }     = await import('three/addons/postprocessing/RenderPass.js'));
+  ({ UnrealBloomPass }= await import('three/addons/postprocessing/UnrealBloomPass.js'));
+  ({ OutputPass }     = await import('three/addons/postprocessing/OutputPass.js'));
+  hasPost = true;
+} catch(e) { console.warn('포스트프로세싱 비활성화:', e); }
+
+// ============================================================================
+//  스테이지 설정
+// ============================================================================
 const STAGES = [
-  { name: '작은 거인',   hp: 180, attackInterval: 130, rockSpeed: 6.0, rockCount: 1, headRadius: 58, healOnStart: 0   },
-  { name: '거인',        hp: 280, attackInterval: 105, rockSpeed: 6.6, rockCount: 1, headRadius: 54, healOnStart: 15 },
-  { name: '강한 거인',   hp: 400, attackInterval: 90,  rockSpeed: 7.2, rockCount: 2, headRadius: 50, healOnStart: 15 },
-  { name: '분노한 거인', hp: 540, attackInterval: 75,  rockSpeed: 7.8, rockCount: 2, headRadius: 46, healOnStart: 20 },
-  { name: '거인왕',      hp: 720, attackInterval: 60,  rockSpeed: 8.6, rockCount: 3, headRadius: 42, healOnStart: 20 }
+  { name:'작은 거인',  hp: 260, scale:1.15, skin:0xb59870, armor:0x6b5a44, eye:0xff8a4d,
+    speed:2.4, throwCd:2.9, rocks:1, rockSpd:23, rockDmg:14, slamDmg:20, heal:0 },
+  { name:'거인',       hp: 420, scale:1.35, skin:0xa3b573, armor:0x5c6b3f, eye:0xffc94d,
+    speed:2.8, throwCd:2.4, rocks:1, rockSpd:25, rockDmg:16, slamDmg:22, heal:25 },
+  { name:'강한 거인',  hp: 620, scale:1.55, skin:0x93a0bd, armor:0x4c5470, eye:0x7fe0ff,
+    speed:3.1, throwCd:2.0, rocks:2, rockSpd:27, rockDmg:17, slamDmg:24, heal:30 },
+  { name:'분노한 거인',hp: 880, scale:1.80, skin:0xc26055, armor:0x6e332c, eye:0xff5a4a,
+    speed:3.5, throwCd:1.7, rocks:2, rockSpd:30, rockDmg:19, slamDmg:27, heal:35 },
+  { name:'거인왕',     hp:1250, scale:2.10, skin:0x6a6a7d, armor:0xc79a3c, eye:0xff5fe0,
+    speed:3.8, throwCd:1.4, rocks:3, rockSpd:33, rockDmg:20, slamDmg:30, heal:40 }
 ];
 
-// ---------- 상태 ----------
-const state = {
-  mouse: { x: window.innerWidth/2, y: window.innerHeight/2 },
-  bullets: [],
-  particles: [],
-  giantProjectiles: [],
-  ammo: 6,
-  maxAmmo: 6,
-  reloading: false,
-  playerHP: 100,
-  playerMaxHP: 100,
-  giantHP: 0,
-  giantMaxHP: 0,
-  gameOver: false,
-  won: false,
-  allClear: false,
-  shake: 0,
-  giantAttackTimer: 0,
-  giantHitFlash: 0,
-  muzzleFlash: 0,
-  time: 0,
-  stageIndex: 0,
-  paused: false
-};
+const ARENA_R   = 46;     // 투기장 반지름
+const EYE_H     = 1.72;
+const DMG_HEAD  = 46, DMG_BODY = 18, DMG_LIMB = 11;
 
-const giant = {
-  x: () => canvas.width/2,
-  baseY: () => canvas.height * 0.42,
-  bobPhase: 0,
-  headRadius: 55,
-  bodyWidth: 160,
-  bodyHeight: 260,
-  stunTimer: 0
-};
+// ============================================================================
+//  렌더러 / 씬
+// ============================================================================
+const canvas   = document.getElementById('game');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace  = THREE.SRGBColorSpace;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.42;
 
-function giantHeadPos() {
-  const bob = Math.sin(giant.bobPhase) * 8;
-  return { x: giant.x(), y: giant.baseY() + bob };
-}
-function giantBodyRect() {
-  const head = giantHeadPos();
-  return {
-    x: giant.x() - giant.bodyWidth/2,
-    y: head.y + giant.headRadius - 10,
-    w: giant.bodyWidth,
-    h: giant.bodyHeight
-  };
+const scene  = new THREE.Scene();
+scene.fog    = new THREE.FogExp2(0x16223a, 0.0072);
+
+const camera = new THREE.PerspectiveCamera(76, innerWidth/innerHeight, 0.05, 600);
+const camRig = new THREE.Object3D();          // 흔들림/반동을 흡수하는 리그
+camRig.add(camera);
+scene.add(camRig);
+
+let composer = null, bloom = null;
+if (hasPost) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.42, 0.55, 0.86);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
 }
 
-// ---------- 입력 ----------
-canvas.addEventListener('mousemove', e => {
-  state.mouse.x = e.clientX;
-  state.mouse.y = e.clientY;
-});
-canvas.addEventListener('click', () => {
-  if (state.gameOver || state.paused) return;
-  shoot();
-});
-window.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'r') reload();
-});
-document.getElementById('actionBtn').addEventListener('click', () => {
-  if (state.allClear || (!state.won && state.gameOver)) {
-    fullReset();
-  } else if (state.won) {
-    nextStage();
-  }
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer && composer.setSize(innerWidth, innerHeight);
 });
 
-function shoot() {
-  if (state.reloading || state.gameOver) return;
-  if (state.ammo <= 0) { reload(); return; }
-  state.ammo--;
-  updateAmmoUI();
-  state.muzzleFlash = 6;
+// ============================================================================
+//  절차적 텍스처
+// ============================================================================
+function makeCanvas(size){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  return [c, c.getContext('2d')];
+}
+function groundTexture(){
+  const [c,g] = makeCanvas(512);
+  g.fillStyle = '#2a2519'; g.fillRect(0,0,512,512);
+  for (let i=0;i<2600;i++){
+    const x=Math.random()*512, y=Math.random()*512, r=Math.random()*22+3;
+    const a=Math.random()*0.09;
+    g.fillStyle = Math.random()<0.5 ? `rgba(58,50,34,${a})` : `rgba(16,14,10,${a})`;
+    g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+  }
+  for (let i=0;i<900;i++){ // 자갈
+    const x=Math.random()*512, y=Math.random()*512, r=Math.random()*2.4+.6;
+    g.fillStyle = `rgba(${110+Math.random()*40|0},${98+Math.random()*30|0},72,.5)`;
+    g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(26,26);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+function ringDecalTexture(){
+  const [c,g] = makeCanvas(256);
+  g.clearRect(0,0,256,256);
+  g.strokeStyle = '#ff4a3a'; g.lineWidth = 12;
+  g.beginPath(); g.arc(128,128,100,0,7); g.stroke();
+  g.lineWidth = 5; g.globalAlpha=.75;
+  g.beginPath(); g.arc(128,128,64,0,7); g.stroke();
+  g.globalAlpha=1; g.lineWidth=8; g.lineCap='round';
+  for(let i=0;i<4;i++){
+    const a=i*Math.PI/2+Math.PI/4;
+    g.beginPath();
+    g.moveTo(128+Math.cos(a)*20,128+Math.sin(a)*20);
+    g.lineTo(128+Math.cos(a)*46,128+Math.sin(a)*46);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function scorchTexture(){
+  const [c,g] = makeCanvas(128);
+  const gr = g.createRadialGradient(64,64,4,64,64,62);
+  gr.addColorStop(0,'rgba(8,6,4,.92)');
+  gr.addColorStop(.55,'rgba(14,10,6,.55)');
+  gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gr; g.fillRect(0,0,128,128);
+  const t=new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const TEX = { ground:groundTexture(), warn:ringDecalTexture(), scorch:scorchTexture() };
 
-  const startX = canvas.width/2;
-  const startY = canvas.height - 40;
-  const dx = state.mouse.x - startX;
-  const dy = state.mouse.y - startY;
-  const dist = Math.hypot(dx, dy);
-  const speed = 28;
-  state.bullets.push({
-    x: startX, y: startY,
-    vx: dx/dist*speed, vy: dy/dist*speed,
-    trail: []
-  });
+// ============================================================================
+//  조명 / 하늘
+// ============================================================================
+const moon = new THREE.DirectionalLight(0xcfe0ff, 2.6);
+moon.position.set(-46, 62, -34);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048,2048);
+moon.shadow.camera.near = 5; moon.shadow.camera.far = 200;
+const S = 70;
+moon.shadow.camera.left=-S; moon.shadow.camera.right=S;
+moon.shadow.camera.top=S;  moon.shadow.camera.bottom=-S;
+moon.shadow.bias = -0.0011;
+moon.shadow.normalBias = 0.035;
+scene.add(moon, moon.target);
+
+scene.add(new THREE.HemisphereLight(0x8fb0e8, 0x453828, 1.15));
+scene.add(new THREE.AmbientLight(0x6f83ad, 0.75));
+
+// 하늘 돔
+{
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(300, 32, 20),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite:false, fog:false,
+      uniforms:{ top:{value:new THREE.Color(0x070b16)}, mid:{value:new THREE.Color(0x1d2c4b)}, bot:{value:new THREE.Color(0x2f2a30)} },
+      vertexShader:`varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+      fragmentShader:`
+        uniform vec3 top,mid,bot; varying vec3 vP;
+        void main(){
+          float h = normalize(vP).y;
+          vec3 c = mix(bot, mid, smoothstep(-0.25, 0.12, h));
+          c = mix(c, top, smoothstep(0.08, 0.65, h));
+          gl_FragColor = vec4(c,1.0);
+        }`
+    })
+  );
+  scene.add(sky);
+
+  // 별
+  const N = 900, pos = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const u=Math.random()*Math.PI*2, v=Math.random()*0.55+0.06, r=280;
+    pos[i*3]   = Math.cos(u)*Math.cos(v)*r;
+    pos[i*3+1] = Math.sin(v)*r;
+    pos[i*3+2] = Math.sin(u)*Math.cos(v)*r;
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color:0xdbe6ff, size:1.1, sizeAttenuation:false, fog:false, transparent:true, opacity:.85 })));
+
+  // 달
+  const md = new THREE.Mesh(new THREE.SphereGeometry(11,24,16),
+    new THREE.MeshBasicMaterial({color:0xdfe9ff, fog:false}));
+  md.position.set(-150,120,-120);
+  scene.add(md);
 }
 
-function reload() {
-  if (state.reloading || state.ammo === state.maxAmmo || state.gameOver) return;
-  state.reloading = true;
-  document.getElementById('ammoInfo').textContent = '🔄 재장전 중...';
-  setTimeout(() => {
-    state.ammo = state.maxAmmo;
-    state.reloading = false;
-    updateAmmoUI();
-  }, 900);
+// ============================================================================
+//  월드 (지면 · 바위 · 기둥 · 횃불)
+// ============================================================================
+const world = new THREE.Group(); scene.add(world);
+
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(ARENA_R+34, 72),
+  new THREE.MeshStandardMaterial({ map:TEX.ground, roughness:.98, metalness:0 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+world.add(ground);
+
+const rockMatA = new THREE.MeshStandardMaterial({ color:0x4a4438, roughness:.95, flatShading:true });
+const rockMatB = new THREE.MeshStandardMaterial({ color:0x35302a, roughness:.9,  flatShading:true });
+
+function scatterRock(x,z,s,mat){
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), mat);
+  m.position.set(x, s*0.42, z);
+  m.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
+  m.scale.set(1, .62+Math.random()*.5, 1);
+  m.castShadow = m.receiveShadow = true;
+  world.add(m);
+  return m;
+}
+// 경계 암벽
+for (let i=0;i<74;i++){
+  const a = i/74*Math.PI*2 + Math.random()*.05;
+  const r = ARENA_R + 2 + Math.random()*5;
+  const s = 3.6 + Math.random()*5.5;
+  const m = scatterRock(Math.cos(a)*r, Math.sin(a)*r, s, i%2?rockMatA:rockMatB);
+  m.scale.y = 1.5 + Math.random();
+}
+// 내부 엄폐물
+const covers = [];
+for (let i=0;i<11;i++){
+  const a = Math.random()*Math.PI*2, r = 12 + Math.random()*(ARENA_R-18);
+  const s = 1.5 + Math.random()*1.9;
+  const m = scatterRock(Math.cos(a)*r, Math.sin(a)*r, s, rockMatA);
+  covers.push({ x:m.position.x, z:m.position.z, r:s*0.95 });
+}
+// 잔돌
+for (let i=0;i<80;i++){
+  const a=Math.random()*Math.PI*2, r=Math.random()*ARENA_R;
+  scatterRock(Math.cos(a)*r, Math.sin(a)*r, .18+Math.random()*.42, rockMatB);
+}
+// 원경 석주
+for (let i=0;i<16;i++){
+  const a=i/16*Math.PI*2, r=ARENA_R+30+Math.random()*40, h=16+Math.random()*30;
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(2.4+Math.random()*2, 4+Math.random()*2.6, h, 6, 1),
+                           new THREE.MeshStandardMaterial({color:0x1d2230, roughness:1, flatShading:true}));
+  p.position.set(Math.cos(a)*r, h/2-1.5, Math.sin(a)*r);
+  p.rotation.y = Math.random()*3;
+  world.add(p);
 }
 
-function updateAmmoUI() {
-  if (!state.reloading) {
-    document.getElementById('ammoInfo').textContent = `🔫 탄창: ${state.ammo} / ${state.maxAmmo}`;
+// 횃불
+const torches = [];
+for (let i=0;i<8;i++){
+  const a = i/8*Math.PI*2 + .2, r = ARENA_R - 3.5;
+  const g = new THREE.Group();
+  g.position.set(Math.cos(a)*r, 0, Math.sin(a)*r);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.16,.24,4.4,7),
+    new THREE.MeshStandardMaterial({color:0x2a211a, roughness:1}));
+  pole.position.y = 2.2; pole.castShadow = true; g.add(pole);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(.62,.36,.62,9),
+    new THREE.MeshStandardMaterial({color:0x191512, roughness:.85, metalness:.4}));
+  bowl.position.y = 4.6; g.add(bowl);
+  const fire = new THREE.Mesh(new THREE.IcosahedronGeometry(.62,0),
+    new THREE.MeshBasicMaterial({color:0xff9124, transparent:true, opacity:.95, fog:false}));
+  fire.position.y = 5.1; g.add(fire);
+  const lt = new THREE.PointLight(0xff8a2a, 22, 30, 2);
+  lt.position.y = 5.1; g.add(lt);
+  world.add(g);
+  torches.push({ fire, lt, ph: Math.random()*9 });
+}
+
+// ============================================================================
+//  파티클 시스템
+// ============================================================================
+const P_VERT = `
+attribute float aSize; attribute float aAlpha; attribute vec3 aColor;
+varying float vA; varying vec3 vC;
+void main(){
+  vA = aAlpha; vC = aColor;
+  vec4 mv = modelViewMatrix * vec4(position,1.0);
+  gl_PointSize = aSize * (330.0 / max(0.001, -mv.z));
+  gl_Position = projectionMatrix * mv;
+}`;
+const P_FRAG = `
+varying float vA; varying vec3 vC;
+void main(){
+  vec2 d = gl_PointCoord - 0.5;
+  float r = length(d);
+  if (r > 0.5) discard;
+  gl_FragColor = vec4(vC, vA * smoothstep(0.5, 0.06, r));
+}`;
+
+class Particles {
+  constructor(max, blending){
+    this.max = max; this.i = 0;
+    this.pos   = new Float32Array(max*3);
+    this.col   = new Float32Array(max*3);
+    this.size  = new Float32Array(max);
+    this.alpha = new Float32Array(max);
+    this.vel   = new Float32Array(max*3);
+    this.life  = new Float32Array(max);
+    this.max_l = new Float32Array(max);
+    this.grav  = new Float32Array(max);
+    this.drag  = new Float32Array(max);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos,3));
+    g.setAttribute('aColor',   new THREE.BufferAttribute(this.col,3));
+    g.setAttribute('aSize',    new THREE.BufferAttribute(this.size,1));
+    g.setAttribute('aAlpha',   new THREE.BufferAttribute(this.alpha,1));
+    g.setDrawRange(0, max);
+    this.geo = g;
+    this.mesh = new THREE.Points(g, new THREE.ShaderMaterial({
+      vertexShader:P_VERT, fragmentShader:P_FRAG,
+      transparent:true, depthWrite:false, blending
+    }));
+    this.mesh.frustumCulled = false;
+    scene.add(this.mesh);
+  }
+  spawn(p, v, color, size, life, grav=-14, drag=1.6){
+    const i = this.i; this.i = (this.i+1) % this.max;
+    this.pos[i*3]=p.x; this.pos[i*3+1]=p.y; this.pos[i*3+2]=p.z;
+    this.vel[i*3]=v.x; this.vel[i*3+1]=v.y; this.vel[i*3+2]=v.z;
+    this.col[i*3]=color.r; this.col[i*3+1]=color.g; this.col[i*3+2]=color.b;
+    this.size[i]=size; this.alpha[i]=1; this.life[i]=life; this.max_l[i]=life;
+    this.grav[i]=grav; this.drag[i]=drag;
+  }
+  update(dt){
+    const {pos,vel,life,max_l,alpha,grav,drag} = this;
+    for (let i=0;i<this.max;i++){
+      if (life[i] <= 0){ if(alpha[i]!==0) alpha[i]=0; continue; }
+      life[i] -= dt;
+      if (life[i] <= 0){ alpha[i]=0; continue; }
+      const k = Math.max(0, 1 - drag[i]*dt);
+      const j = i*3;
+      vel[j]*=k; vel[j+1]=vel[j+1]*k + grav[i]*dt; vel[j+2]*=k;
+      pos[j]+=vel[j]*dt; pos[j+1]+=vel[j+1]*dt; pos[j+2]+=vel[j+2]*dt;
+      if (pos[j+1] < 0.04){ pos[j+1]=0.04; vel[j+1]*=-0.28; vel[j]*=.6; vel[j+2]*=.6; }
+      const t = life[i]/max_l[i];
+      alpha[i] = t < .35 ? t/.35 : 1;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.attributes.aAlpha.needsUpdate   = true;
+    this.geo.attributes.aColor.needsUpdate   = true;
+    this.geo.attributes.aSize.needsUpdate    = true;
+  }
+}
+const sparks = new Particles(1400, THREE.AdditiveBlending);
+const debris = new Particles(1200, THREE.NormalBlending);
+
+const _c = new THREE.Color(), _v = new THREE.Vector3();
+function burst(sys, p, count, color, opt={}){
+  const { spd=8, size=.22, life=.7, up=.4, grav=-14, drag=1.6, spread=1 } = opt;
+  for (let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2, e = (Math.random()-.5)*Math.PI*spread;
+    const s = spd*(0.35+Math.random()*.9);
+    _v.set(Math.cos(a)*Math.cos(e)*s, Math.sin(e)*s + up*spd*Math.random(), Math.sin(a)*Math.cos(e)*s);
+    _c.set(color).offsetHSL(0,0,(Math.random()-.5)*.16);
+    sys.spawn(p, _v, _c, size*(.55+Math.random()*.9), life*(.6+Math.random()*.8), grav, drag);
   }
 }
 
-// ---------- 충돌 ----------
-function circleHit(px, py, cx, cy, r) { return Math.hypot(px-cx, py-cy) <= r; }
-function rectHit(px, py, rect) { return px >= rect.x && px <= rect.x+rect.w && py >= rect.y && py <= rect.y+rect.h; }
+// ============================================================================
+//  일회성 이펙트 (충격파 · 자국 · 예고선 · 탄도선)
+// ============================================================================
+const fx = [];
+function addFx(o){ fx.push(o); scene.add(o.obj); return o; }
 
-function damageGiant(amount, isCrit, hitX, hitY) {
-  state.giantHP = Math.max(0, state.giantHP - amount);
-  state.giantHitFlash = 8;
-  state.shake = isCrit ? 14 : 6;
-  spawnParticles(hitX, hitY, isCrit ? '#ffdd55' : '#ff6666', isCrit ? 22 : 10);
-  updateGiantBar();
-  if (isCrit) giant.stunTimer = 40;
-  if (state.giantHP <= 0 && !state.gameOver) {
-    stageCleared();
+function shockwave(pos, maxR, color, dur=.55){
+  const m = new THREE.Mesh(
+    new THREE.RingGeometry(.6, 1, 44),
+    new THREE.MeshBasicMaterial({ color, transparent:true, opacity:.9, side:THREE.DoubleSide, depthWrite:false, fog:false })
+  );
+  m.rotation.x = -Math.PI/2;
+  m.position.set(pos.x, 0.09, pos.z);
+  addFx({ obj:m, t:0, dur, tick(dt){
+    const k = this.t/this.dur;
+    m.scale.setScalar(1 + k*maxR);
+    m.material.opacity = (1-k)*.9;
+  }});
+}
+function scorchMark(pos, r){
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(r*2, r*2),
+    new THREE.MeshBasicMaterial({ map:TEX.scorch, transparent:true, depthWrite:false, opacity:.95 }));
+  m.rotation.x = -Math.PI/2;
+  m.position.set(pos.x, 0.035 + Math.random()*.01, pos.z);
+  addFx({ obj:m, t:0, dur:14, tick(dt){ m.material.opacity = .95*(1 - this.t/this.dur); }});
+}
+function tracer(a, b){
+  const g = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]);
+  const m = new THREE.Line(g, new THREE.LineBasicMaterial({ color:0xfff0b0, transparent:true, opacity:.9, fog:false, blending:THREE.AdditiveBlending, depthWrite:false }));
+  addFx({ obj:m, t:0, dur:.09, tick(){ m.material.opacity = .9*(1-this.t/this.dur); }});
+}
+function flashLight(pos, color, intensity, dur, dist=40){
+  const l = new THREE.PointLight(color, intensity, dist, 2);
+  l.position.copy(pos);
+  addFx({ obj:l, t:0, dur, tick(){ l.intensity = intensity*(1-this.t/this.dur); }});
+}
+function updateFx(dt){
+  for (let i=fx.length-1;i>=0;i--){
+    const f = fx[i]; f.t += dt; f.tick(dt);
+    if (f.t >= f.dur){ scene.remove(f.obj); f.obj.geometry?.dispose?.(); f.obj.material?.dispose?.(); fx.splice(i,1); }
   }
 }
 
-function spawnParticles(x, y, color, count) {
-  for (let i=0;i<count;i++) {
-    const angle = Math.random()*Math.PI*2;
-    const speed = Math.random()*6+2;
-    state.particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 30+Math.random()*20, color });
-  }
-}
-
-function updateGiantBar() {
-  document.getElementById('giantBar').style.width = (state.giantHP/state.giantMaxHP*100)+'%';
-}
-function updatePlayerBar() {
-  document.getElementById('playerBar').style.width = (Math.max(0,state.playerHP)/state.playerMaxHP*100)+'%';
-}
-
-// ---------- 거인 공격 ----------
-function giantThrowRock() {
-  const cfg = STAGES[state.stageIndex];
-  const head = giantHeadPos();
-  for (let n=0; n<cfg.rockCount; n++) {
-    const targetX = canvas.width/2 + (Math.random()*360-180);
-    const targetY = canvas.height - 60;
-    const startX = giant.x() + (Math.random()*140-70);
-    const startY = head.y + 150;
-    const dx = targetX-startX, dy = targetY-startY;
-    const dist = Math.hypot(dx,dy);
-    const speed = cfg.rockSpeed;
-    state.giantProjectiles.push({
-      x: startX, y: startY,
-      vx: dx/dist*speed, vy: dy/dist*speed,
-      r: 16, warnTimer: 30 - Math.min(20, state.stageIndex*3), targetX, targetY
+// ============================================================================
+//  사운드 (WebAudio 합성)
+// ============================================================================
+const Sfx = {
+  ctx:null, noise:null, master:null,
+  init(){
+    if (this.ctx) { this.ctx.resume(); return; }
+    this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+    this.master = this.ctx.createGain(); this.master.gain.value = .5;
+    this.master.connect(this.ctx.destination);
+    const len = this.ctx.sampleRate*2;
+    const b = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    this.noise = b;
+  },
+  env(node, t0, a, d, peak){
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0+a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+a+d);
+    node.connect(g); g.connect(this.master);
+    return g;
+  },
+  noiseSrc(t0, dur, type, freq, q){
+    const s = this.ctx.createBufferSource(); s.buffer = this.noise; s.loop = true;
+    const f = this.ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if(q) f.Q.value = q;
+    s.connect(f); s.start(t0); s.stop(t0+dur+.05);
+    return f;
+  },
+  shot(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    this.env(this.noiseSrc(t,.3,'bandpass',1500,.7), t, .002, .16, .9);
+    this.env(this.noiseSrc(t,.4,'lowpass',220), t, .004, .34, 1.0);
+    const o = this.ctx.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(48,t+.14);
+    this.env(o,t,.003,.15,.5); o.start(t); o.stop(t+.25);
+  },
+  hit(crit){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(); o.type = crit?'square':'triangle';
+    o.frequency.setValueAtTime(crit?1180:760, t);
+    o.frequency.exponentialRampToValueAtTime(crit?520:340, t+.09);
+    this.env(o, t, .002, .1, crit?.42:.22); o.start(t); o.stop(t+.16);
+    if (crit){
+      const o2 = this.ctx.createOscillator(); o2.type='sine';
+      o2.frequency.setValueAtTime(1760,t+.03);
+      this.env(o2,t+.03,.002,.14,.24); o2.start(t+.03); o2.stop(t+.22);
+    }
+  },
+  boom(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    this.env(this.noiseSrc(t,.9,'lowpass',420), t, .01, .8, 1.0);
+    const o = this.ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(28,t+.5);
+    this.env(o,t,.008,.55,.85); o.start(t); o.stop(t+.7);
+  },
+  reload(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    [0,.14,.32].forEach((d,i)=>{
+      this.env(this.noiseSrc(t+d,.1,'highpass',1800), t+d, .003, .07, .3);
+      const o = this.ctx.createOscillator(); o.type='square';
+      o.frequency.setValueAtTime(300+i*140, t+d);
+      this.env(o, t+d, .002, .05, .12); o.start(t+d); o.stop(t+d+.1);
+    });
+  },
+  roar(pitch=1){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(88*pitch,t);
+    o.frequency.linearRampToValueAtTime(56*pitch,t+.9);
+    const f = this.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=520;
+    o.connect(f);
+    this.env(f,t,.14,1.0,.65); o.start(t); o.stop(t+1.3);
+    this.env(this.noiseSrc(t,1.1,'bandpass',260,1.4), t, .16, .95, .35);
+  },
+  hurt(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    this.env(this.noiseSrc(t,.4,'lowpass',700), t, .004, .3, .55);
+  },
+  win(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    [523,659,784,1047].forEach((f,i)=>{
+      const o = this.ctx.createOscillator(); o.type='triangle'; o.frequency.value=f;
+      this.env(o, t+i*.12, .01, .38, .26); o.start(t+i*.12); o.stop(t+i*.12+.5);
+    });
+  },
+  lose(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    [392,330,262,196].forEach((f,i)=>{
+      const o = this.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
+      this.env(o, t+i*.19, .02, .5, .22); o.start(t+i*.19); o.stop(t+i*.19+.7);
     });
   }
+};
+
+// ============================================================================
+//  거인
+// ============================================================================
+// 외곽 발광(림 라이트) — 어두운 배경에서도 실루엣이 살아난다
+function addRim(mat, color, strength, power){
+  mat.userData.rim = { color:{ value:new THREE.Color(color) },
+                       str:  { value:strength },
+                       pow:  { value:power } };
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uRimColor = mat.userData.rim.color;
+    sh.uniforms.uRimStr   = mat.userData.rim.str;
+    sh.uniforms.uRimPow   = mat.userData.rim.pow;
+    sh.fragmentShader = sh.fragmentShader
+      .replace('void main() {',
+        'uniform vec3 uRimColor; uniform float uRimStr; uniform float uRimPow;\nvoid main() {')
+      .replace('#include <dithering_fragment>',
+        '#include <dithering_fragment>\n' +
+        '  float rimF = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);\n' +
+        '  gl_FragColor.rgb += uRimColor * pow(rimF, uRimPow) * uRimStr;');
+  };
+  mat.needsUpdate = true;
+  return mat;
 }
 
-// ---------- 스테이지 흐름 ----------
-function loadStage(index) {
-  const cfg = STAGES[index];
-  state.stageIndex = index;
-  state.giantMaxHP = cfg.hp;
-  state.giantHP = cfg.hp;
-  giant.headRadius = cfg.headRadius;
-  giant.stunTimer = 0;
-  state.giantProjectiles = [];
-  state.bullets = [];
-  state.giantAttackTimer = 0;
-  state.gameOver = false;
-  state.won = false;
-  state.paused = false;
+function buildGiant(cfg){
+  const root = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({ color:cfg.skin,  roughness:.88, metalness:.05, flatShading:true });
+  const dark = new THREE.MeshStandardMaterial({ color:cfg.armor, roughness:.5,  metalness:.55, flatShading:true });
+  const horn = new THREE.MeshStandardMaterial({ color:0xd8cdb4, roughness:.65, metalness:.1,  flatShading:true });
+  const eyeM = new THREE.MeshBasicMaterial({ color:cfg.eye, fog:false, transparent:true });
+  addRim(skin, 0x9fd0ff, 0.30, 2.8);
+  addRim(dark, 0xffd08a, 0.26, 2.6);
+  addRim(horn, 0xfff0d0, 0.22, 2.4);
 
-  state.playerHP = Math.min(state.playerMaxHP, state.playerHP + cfg.healOnStart);
+  const hit = [];
+  const mk = (mesh, part) => {
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.userData.part = part; if (part) hit.push(mesh);
+    return mesh;
+  };
+  const add = (parent, geo, mat, part, pos, rot, scl) => {
+    const m = mk(new THREE.Mesh(geo, mat), part);
+    if (pos) m.position.set(pos[0],pos[1],pos[2]);
+    if (rot) m.rotation.set(rot[0],rot[1],rot[2]);
+    if (scl) m.scale.set(scl[0],scl[1],scl[2]);
+    parent.add(m); return m;
+  };
 
-  document.getElementById('stageTitle').textContent = `STAGE ${index+1} / ${STAGES.length}`;
-  document.getElementById('giantName').textContent = cfg.name;
-  updateGiantBar();
-  updatePlayerBar();
-  updateAmmoUI();
-  document.getElementById('centerMsg').style.display = 'none';
-  document.getElementById('subMsg').style.display = 'none';
-  document.getElementById('actionBtn').style.display = 'none';
+  // ---------------- 골반 ----------------
+  const hips = new THREE.Group(); hips.position.y = 4.35; root.add(hips);
 
-  showStageBanner(`STAGE ${index+1} · ${cfg.name} 등장!`);
-}
+  // ---------------- 몸통 ----------------
+  add(hips, new THREE.CapsuleGeometry(1.30, 1.5, 7, 20), skin, 'body', [0,1.25,0], null, [1.12,1,.86]);
+  add(hips, new THREE.BoxGeometry(3.05, 1.25, 1.95), dark, 'body', [0,2.42,.06], [.06,0,0]);
+  [-1,1].forEach(s => {
+    add(hips, new THREE.BoxGeometry(1.25,.95,.45), dark, 'body', [s*.76, 2.62, 1.02], [-.16,0,-s*.1]);
+    for (let i=0;i<3;i++)
+      add(hips, new THREE.BoxGeometry(.62,.42,.3), skin, 'body', [s*.38, 1.62-i*.5, .95], null, [1,1,.7]);
+  });
+  // 허리띠 + 허리 감개
+  add(hips, new THREE.BoxGeometry(3.05,.6,2.05), dark, 'body', [0,.2,0]);
+  add(hips, new THREE.CylinderGeometry(.42,.42,.34,10), horn, null, [0,.2,1.02], [Math.PI/2,0,0]);
+  for (let i=-2;i<=2;i++)
+    add(hips, new THREE.BoxGeometry(.52,1.5,.26), dark, null, [i*.62,-.62,.86], [.1,0,i*.05]);
+  add(hips, new THREE.BoxGeometry(2.5,1.3,.24), dark, null, [0,-.55,-.92]);
 
-function showStageBanner(text) {
-  const el = document.getElementById('stageBanner');
-  el.textContent = text;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 1800);
-}
+  // 등 가시
+  for (let i=0;i<4;i++)
+    add(hips, new THREE.ConeGeometry(.2, .75+i*.12, 5), horn, null, [0, .9+i*.62, -.9-i*.05], [-.35,0,0]);
 
-function stageCleared() {
-  state.gameOver = true;
-  state.won = true;
-  state.paused = true;
-  const isLast = state.stageIndex === STAGES.length - 1;
-  const el = document.getElementById('centerMsg');
-  const sub = document.getElementById('subMsg');
-  const btn = document.getElementById('actionBtn');
-  if (isLast) {
-    state.allClear = true;
-    el.textContent = '🏆 모든 단계 클리어!';
-    el.style.color = '#ffdd55';
-    sub.textContent = '거인왕까지 모두 물리쳤습니다. 축하합니다!';
-    btn.textContent = '처음부터 다시';
-  } else {
-    el.textContent = `✅ STAGE ${state.stageIndex+1} 클리어!`;
-    el.style.color = '#8affa0';
-    sub.textContent = `${STAGES[state.stageIndex].name}을(를) 물리쳤습니다.`;
-    btn.textContent = '다음 단계로';
+  // ---------------- 어깨 ----------------
+  [-1,1].forEach(s => {
+    add(hips, new THREE.IcosahedronGeometry(1.02,0), dark, 'body', [s*1.82,2.72,0], [0,s*.4,0], [1,.82,1]);
+    add(hips, new THREE.ConeGeometry(.30,1.25,6), horn, null, [s*2.05,3.42,0],   [0,0,-s*.44]);
+    add(hips, new THREE.ConeGeometry(.22,.90,6),  horn, null, [s*2.25,3.05,-.55],[-.3,0,-s*.7]);
+  });
+
+  // ---------------- 머리 ----------------
+  const neck = new THREE.Group(); neck.position.y = 3.82; hips.add(neck);
+  add(neck, new THREE.CylinderGeometry(.52,.72,.7,10), skin, 'body', [0,-.62,0]);
+
+  const head = mk(new THREE.Mesh(new THREE.IcosahedronGeometry(1.12, 1), skin), 'head');
+  head.scale.set(1.02, 1.12, 1.04); neck.add(head);
+  add(neck, new THREE.BoxGeometry(1.6,.4,.7), skin, 'head', [0,.42,.66], [-.22,0,0]);   // 이마
+  add(neck, new THREE.BoxGeometry(1.22,.55,1.0), skin, 'head', [0,-.66,.3], [.1,0,0]);  // 턱
+  [-1,1].forEach(s => add(neck, new THREE.ConeGeometry(.11,.34,4), horn, null, [s*.34,-.42,.72], [Math.PI,0,0]));
+  [-1,1].forEach(s => {
+    add(neck, new THREE.ConeGeometry(.26,1.5,6), horn, null, [s*.72,.8,-.12], [-.28,0,-s*.52]);
+    add(neck, new THREE.ConeGeometry(.15,.7,5),  horn, null, [s*.50,.95,.28], [-.50,0,-s*.30]);
+  });
+  const eyes = [];
+  [-1,1].forEach(s => {
+    add(neck, new THREE.BoxGeometry(.42,.2,.18), dark, 'head', [s*.42,.2,.9], [0,0,-s*.28]);
+    const e = new THREE.Mesh(new THREE.SphereGeometry(.19,12,10), eyeM);
+    e.position.set(s*.42, .08, .92); neck.add(e); eyes.push(e);
+  });
+  const eyeLight = new THREE.PointLight(cfg.eye, 2.4, 12, 2);
+  eyeLight.position.set(0,.05,2.3); neck.add(eyeLight);
+
+  // ---------------- 팔 ----------------
+  function makeArm(side){
+    const sh = new THREE.Group(); sh.position.set(side*1.92, 2.6, 0); hips.add(sh);
+    add(sh, new THREE.CapsuleGeometry(.56, 1.45, 6, 14), skin, 'limb', [0,-1.0,0]);
+    add(sh, new THREE.BoxGeometry(1.05,.5,1.05), dark, 'limb', [0,-.35,0]);
+
+    const el = new THREE.Group(); el.position.y = -1.95; sh.add(el);
+    add(el, new THREE.CapsuleGeometry(.5, 1.35, 6, 14), skin, 'limb', [0,-.85,0]);
+    add(el, new THREE.CylinderGeometry(.58,.52,.6,9), dark, 'limb', [0,-.28,0]);
+    add(el, new THREE.CylinderGeometry(.54,.50,.45,9), horn, null, [0,-1.42,0]);
+
+    const hand = mk(new THREE.Mesh(new THREE.IcosahedronGeometry(.7,0), dark), 'limb');
+    hand.position.y = -1.95; hand.scale.set(1,.9,.85); el.add(hand);
+    for (let i=-1;i<=1;i++)
+      add(hand, new THREE.CapsuleGeometry(.16,.34,4,8), dark, null, [i*.34,-.6,.12], [.2,0,i*.15]);
+    add(hand, new THREE.CapsuleGeometry(.16,.3,4,8), dark, null, [side*.55,-.2,.3], [0,0,side*1.1]);
+
+    const anchor = new THREE.Object3D(); anchor.position.set(0,-.72,.35); hand.add(anchor);
+    return { sh, el, hand, anchor };
   }
-  el.style.display = 'block';
-  sub.style.display = 'block';
-  btn.style.display = 'block';
+  const armL = makeArm(-1), armR = makeArm(1);
+
+  // ---------------- 다리 ----------------
+  function makeLeg(side){
+    const hp = new THREE.Group(); hp.position.set(side*.88, 0, 0); hips.add(hp);
+    add(hp, new THREE.CapsuleGeometry(.72, 1.6, 6, 14), skin, 'limb', [0,-1.05,0]);
+
+    const kn = new THREE.Group(); kn.position.y = -2.15; hp.add(kn);
+    add(kn, new THREE.IcosahedronGeometry(.62,0), dark, 'limb', [0,.05,.16]);
+    add(kn, new THREE.CapsuleGeometry(.58, 1.4, 6, 14), skin, 'limb', [0,-.9,0]);
+    add(kn, new THREE.CylinderGeometry(.62,.56,.5,9), dark, 'limb', [0,-1.55,0]);
+    add(kn, new THREE.BoxGeometry(1.2,.55,2.05), dark, 'limb', [0,-1.95,.34]);
+    for (let i=-1;i<=1;i++)
+      add(kn, new THREE.ConeGeometry(.15,.4,5), horn, null, [i*.36,-1.98,1.32], [1.34,0,0]);
+    return { hp, kn };
+  }
+  const legL = makeLeg(-1), legR = makeLeg(1);
+
+  root.scale.setScalar(cfg.scale);
+  scene.add(root);
+
+  return { root, hips, neck, head, eyes, eyeLight, armL, armR, legL, legR, hit,
+           skin, dark, horn, matList:[skin, dark, horn], height: 9.1*cfg.scale };
 }
 
-function nextStage() {
-  const next = state.stageIndex + 1;
-  loadStage(next);
+// 거인을 항상 또렷하게 비추는 전용 조명
+const giantKey = new THREE.SpotLight(0xffe9c8, 52, 95, 0.75, 0.5, 1.3);
+giantKey.position.set(0, 34, 12);
+scene.add(giantKey, giantKey.target);
+const giantRim = new THREE.PointLight(0x86b6ff, 34, 46, 2);
+scene.add(giantRim);
+
+const giant = {
+  cfg:null, rig:null, hp:0, maxHp:0,
+  state:'idle', t:0, walkPh:0, stun:0, flash:0, throwCd:0, dead:false, deathT:0,
+  pos:new THREE.Vector3(0,0,-26), yaw:0, roar:0
+};
+
+function spawnGiant(cfg){
+  if (giant.rig){
+    giant.rig.root.traverse(o=>{ o.geometry?.dispose?.(); });
+    scene.remove(giant.rig.root);
+  }
+  giant.cfg = cfg;
+  giant.rig = buildGiant(cfg);
+  giant.maxHp = giant.hp = cfg.hp;
+  giant.state='idle'; giant.t=0; giant.stun=0; giant.flash=0; giant.dead=false; giant.deathT=0;
+  giant.throwCd = 2.0;
+  giant.pos.set(0, 0, -21);
+  giant.yaw = 0;
+  giant.rig.root.position.copy(giant.pos);
 }
 
-function loseGame() {
-  state.gameOver = true;
-  state.won = false;
-  state.paused = true;
-  const el = document.getElementById('centerMsg');
-  const sub = document.getElementById('subMsg');
-  const btn = document.getElementById('actionBtn');
-  el.textContent = '💀 쓰러졌습니다...';
-  el.style.color = '#ff4d4d';
-  sub.textContent = `STAGE ${state.stageIndex+1} · ${STAGES[state.stageIndex].name}에게 패배`;
-  sub.style.display = 'block';
-  btn.textContent = '처음부터 다시';
-  el.style.display = 'block';
-  btn.style.display = 'block';
+function giantHeadWorld(out){
+  giant.rig.neck.getWorldPosition(out);
+  return out;
 }
 
-function fullReset() {
-  state.playerHP = state.playerMaxHP;
-  state.ammo = state.maxAmmo;
-  state.reloading = false;
-  state.allClear = false;
-  state.particles = [];
-  loadStage(0);
-}
+const _gv = new THREE.Vector3(), _gv2 = new THREE.Vector3();
 
-// ---------- 그리기 ----------
-function drawGround() {
-  const grad = ctx.createLinearGradient(0, canvas.height-140, 0, canvas.height);
-  grad.addColorStop(0, '#1c2438');
-  grad.addColorStop(1, '#05070c');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, canvas.height-140, canvas.width, 140);
-}
+function updateGiant(dt){
+  const R = giant.rig, cfg = giant.cfg;
+  if (!R) return;
 
-function drawGiant() {
-  if (state.won) return;
-  const head = giantHeadPos();
-  const body = giantBodyRect();
-  const flashing = state.giantHitFlash > 0;
-
-  ctx.fillStyle = flashing ? '#ff9999' : '#5a4632';
-  ctx.beginPath();
-  ctx.moveTo(body.x, body.y+body.h);
-  ctx.lineTo(body.x, body.y+40);
-  ctx.quadraticCurveTo(body.x, body.y, body.x+body.w/2, body.y);
-  ctx.quadraticCurveTo(body.x+body.w, body.y, body.x+body.w, body.y+40);
-  ctx.lineTo(body.x+body.w, body.y+body.h);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = flashing ? '#ffaaaa' : '#4a3826';
-  ctx.fillRect(body.x-30, body.y+30, 30, 160);
-  ctx.fillRect(body.x+body.w, body.y+30, 30, 160);
-
-  ctx.fillStyle = '#332619';
-  ctx.fillRect(body.x+20, body.y+body.h-10, 50, 60);
-  ctx.fillRect(body.x+body.w-70, body.y+body.h-10, 50, 60);
-
-  ctx.fillStyle = flashing ? '#ffbbbb' : '#7a5f42';
-  ctx.beginPath();
-  ctx.arc(head.x, head.y, giant.headRadius, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.fillStyle = giant.stunTimer > 0 ? '#88ccff' : '#ff3333';
-  ctx.beginPath();
-  ctx.arc(head.x-18, head.y-5, 6, 0, Math.PI*2);
-  ctx.arc(head.x+18, head.y-5, 6, 0, Math.PI*2);
-  ctx.fill();
-
-  if (giant.stunTimer > 0) {
-    ctx.fillStyle = '#fff';
-    ctx.font = '20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('⭐ 기절 ⭐', head.x, head.y - giant.headRadius - 15);
+  // 피격 플래시
+  if (giant.flash > 0){
+    giant.flash -= dt;
+    const k = Math.max(0, giant.flash/0.12);
+    R.matList.forEach(m => m.emissive.setRGB(k*0.9, k*0.12, k*0.1));
   }
 
-  ctx.strokeStyle = 'rgba(255,255,0,0.35)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(head.x, head.y, giant.headRadius, 0, Math.PI*2);
-  ctx.stroke();
-}
+  giantKey.position.set(giant.pos.x + 6, 30, giant.pos.z + 14);
+  giantKey.target.position.copy(giant.pos).setY(R.height*0.45);
+  giantKey.target.updateMatrixWorld();
+  giantRim.position.set(giant.pos.x - 7, R.height*0.85, giant.pos.z - 9);
 
-function drawPlayerGun() {
-  const startX = canvas.width/2;
-  const startY = canvas.height - 40;
-  const dx = state.mouse.x-startX, dy = state.mouse.y-startY;
-  const angle = Math.atan2(dy,dx);
-
-  ctx.save();
-  ctx.translate(startX, startY);
-  ctx.rotate(angle);
-  ctx.fillStyle = '#222';
-  ctx.fillRect(0, -6, 60, 12);
-  ctx.fillStyle = '#444';
-  ctx.fillRect(-14, -12, 24, 24);
-  if (state.muzzleFlash > 0) {
-    ctx.fillStyle = 'rgba(255,220,100,0.9)';
-    ctx.beginPath();
-    ctx.arc(60, 0, 14, 0, Math.PI*2);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawCrosshair() {
-  const {x,y} = state.mouse;
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(x,y,14,0,Math.PI*2);
-  ctx.moveTo(x-20,y); ctx.lineTo(x-8,y);
-  ctx.moveTo(x+8,y); ctx.lineTo(x+20,y);
-  ctx.moveTo(x,y-20); ctx.lineTo(x,y-8);
-  ctx.moveTo(x,y+8); ctx.lineTo(x,y+20);
-  ctx.stroke();
-}
-
-function drawBullets() {
-  ctx.lineCap = 'round';
-  for (const b of state.bullets) {
-    ctx.strokeStyle = 'rgba(255,240,150,0.6)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    if (b.trail.length>1) {
-      ctx.moveTo(b.trail[0].x, b.trail[0].y);
-      for (const p of b.trail) ctx.lineTo(p.x,p.y);
+  // 사망 연출
+  if (giant.dead){
+    giant.deathT += dt;
+    const k = Math.min(1, giant.deathT/1.25);
+    const e = 1-Math.pow(1-k, 3);
+    R.root.rotation.x = -e * Math.PI * 0.47;
+    R.root.position.y = -Math.sin(e*Math.PI)*0.5;
+    R.eyeLight.intensity = 2.4*(1-k);
+    R.eyes.forEach(m => m.material.opacity = 1-k);
+    R.hips.rotation.x = e*0.35;
+    if (giant.deathT > .18 && giant.deathT < .3){
+      burst(debris, _gv.copy(giant.pos).setY(.4), 40, 0x6b5f45, {spd:9, size:.4, life:1.6, up:.9, spread:.5});
     }
-    ctx.stroke();
-    ctx.fillStyle = '#fff8c0';
-    ctx.beginPath();
-    ctx.arc(b.x,b.y,4,0,Math.PI*2);
-    ctx.fill();
+    return;
   }
-}
 
-function drawGiantProjectiles() {
-  for (const p of state.giantProjectiles) {
-    if (p.warnTimer > 0) continue;
-    ctx.fillStyle = '#8a6a4a';
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = '#3a2a1a';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-  for (const p of state.giantProjectiles) {
-    if (p.warnTimer > 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.5 + 0.5*Math.sin(state.time*0.4);
-      ctx.strokeStyle = '#ff4444';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(p.targetX, p.targetY, 30, 0, Math.PI*2);
-      ctx.stroke();
-      ctx.restore();
+  const toP = _gv.copy(player.pos).sub(giant.pos); toP.y = 0;
+  const dist = toP.length();
+  const wantYaw = Math.atan2(toP.x, toP.z);
+  let dy = wantYaw - giant.yaw;
+  while (dy >  Math.PI) dy -= Math.PI*2;
+  while (dy < -Math.PI) dy += Math.PI*2;
+
+  giant.t += dt;
+
+  // ---- 기절 ----
+  if (giant.stun > 0){
+    giant.stun -= dt;
+    const k = Math.min(1, giant.stun*3);
+    R.hips.rotation.x = 0.42*k;
+    R.hips.position.y = 4.3 - 1.5*k;
+    R.neck.rotation.x = 0.55*k;
+    R.armL.sh.rotation.set(0.4*k, 0, 0.5*k);
+    R.armR.sh.rotation.set(0.4*k, 0, -0.5*k);
+    R.legL.hp.rotation.x = -0.7*k; R.legR.hp.rotation.x = 0.3*k;
+    R.legL.kn.rotation.x = 1.0*k;
+    if (Math.random() < dt*22){
+      giantHeadWorld(_gv2);
+      _gv2.y += 1.6*cfg.scale;
+      burst(sparks, _gv2, 2, 0xffe27a, {spd:2.4, size:.3, life:.6, grav:-1, drag:.4});
     }
-  }
-}
-
-function drawParticles() {
-  for (const p of state.particles) {
-    ctx.globalAlpha = Math.max(0, p.life/40);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,3,0,Math.PI*2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-// ---------- 업데이트 ----------
-function update() {
-  state.time++;
-  giant.bobPhase += 0.03;
-  if (giant.stunTimer > 0) giant.stunTimer--;
-  if (state.giantHitFlash > 0) state.giantHitFlash--;
-  if (state.muzzleFlash > 0) state.muzzleFlash--;
-  if (state.shake > 0) state.shake *= 0.85;
-
-  if (state.paused || state.gameOver) return;
-
-  const cfg = STAGES[state.stageIndex];
-
-  for (let i=state.bullets.length-1;i>=0;i--) {
-    const b = state.bullets[i];
-    b.trail.push({x:b.x,y:b.y});
-    if (b.trail.length>8) b.trail.shift();
-    b.x += b.vx; b.y += b.vy;
-
-    let hit = false;
-    const head = giantHeadPos();
-    if (circleHit(b.x,b.y, head.x, head.y, giant.headRadius)) {
-      damageGiant(35, true, b.x, b.y);
-      hit = true;
-    } else if (rectHit(b.x,b.y, giantBodyRect())) {
-      damageGiant(15, false, b.x, b.y);
-      hit = true;
-    }
-    if (hit || b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height) {
-      state.bullets.splice(i,1);
-    }
-    if (state.gameOver) break;
+    if (giant.stun <= 0){ giant.state='idle'; giant.t=0; Sfx.roar(1.1); giant.roar = .5; }
+    return;
   }
 
-  if (!state.gameOver && giant.stunTimer <= 0) {
-    state.giantAttackTimer++;
-    if (state.giantAttackTimer > cfg.attackInterval) {
-      giantThrowRock();
-      state.giantAttackTimer = 0;
-    }
-  }
+  R.hips.position.y = 4.3;
+  R.neck.rotation.x = 0;
 
-  for (let i=state.giantProjectiles.length-1;i>=0;i--) {
-    const p = state.giantProjectiles[i];
-    if (p.warnTimer > 0) { p.warnTimer--; continue; }
-    p.x += p.vx; p.y += p.vy;
-    if (p.y >= p.targetY-4) {
-      const playerX = canvas.width/2;
-      const distToPlayer = Math.abs(p.x - playerX);
-      if (distToPlayer < 60) {
-        state.playerHP = Math.max(0, state.playerHP - 18);
-        updatePlayerBar();
-        state.shake = 16;
-        spawnParticles(p.x,p.y,'#ff6666',14);
-        if (state.playerHP <= 0) loseGame();
-      } else {
-        spawnParticles(p.x,p.y,'#8a6a4a',8);
+  // ---- 상태 머신 ----
+  let moving = false;
+  switch (giant.state){
+    case 'idle': {
+      giant.yaw += dy * Math.min(1, dt*3.2);
+      giant.throwCd -= dt;
+      const pref = 17;
+      if (dist > pref + 3){ moving = true; }
+      else if (dist < 9.5 && giant.throwCd < cfg.throwCd*0.5){
+        giant.state = 'slam'; giant.t = 0;
       }
-      state.giantProjectiles.splice(i,1);
+      if (moving){
+        const sp = cfg.speed * dt;
+        giant.pos.x += Math.sin(giant.yaw)*sp;
+        giant.pos.z += Math.cos(giant.yaw)*sp;
+        const r = Math.hypot(giant.pos.x, giant.pos.z);
+        if (r > ARENA_R-8){ giant.pos.multiplyScalar((ARENA_R-8)/r); }
+      }
+      if (giant.throwCd <= 0 && dist > 11){
+        giant.state = 'throw'; giant.t = 0; giant.throwCd = cfg.throwCd;
+        if (Math.random()<.4){ Sfx.roar(1); giant.roar=.4; }
+      }
+      break;
+    }
+    case 'throw': {
+      giant.yaw += dy * Math.min(1, dt*4.5);
+      const t = giant.t;
+      if (t < .55){                       // 백스윙
+        const k = t/.55;
+        R.armR.sh.rotation.x = -k*2.5;
+        R.armR.sh.rotation.z = -k*.55;
+        R.armR.el.rotation.x =  k*1.4;
+        R.hips.rotation.y = k*.42;
+      } else if (t < .75){                // 투척
+        const k = (t-.55)/.2;
+        R.armR.sh.rotation.x = -2.5 + k*3.5;
+        R.armR.el.rotation.x = 1.4 - k*1.5;
+        R.hips.rotation.y = .42 - k*.85;
+        if (!giant._thrown){ giant._thrown = true; throwRocks(); }
+      } else {                            // 복귀
+        const k = Math.min(1,(t-.75)/.45);
+        R.armR.sh.rotation.x = (1-k)*1.0;
+        R.armR.el.rotation.x = (1-k)*-0.1;
+        R.hips.rotation.y = (1-k)*-.43;
+        if (k >= 1){ giant.state='idle'; giant.t=0; giant._thrown=false; }
+      }
+      break;
+    }
+    case 'slam': {
+      giant.yaw += dy * Math.min(1, dt*3);
+      const t = giant.t;
+      if (t < .7){
+        const k = t/.7;
+        R.armL.sh.rotation.x = -k*2.7; R.armR.sh.rotation.x = -k*2.7;
+        R.hips.rotation.x = -k*.2;
+      } else if (t < .88){
+        const k = (t-.7)/.18;
+        R.armL.sh.rotation.x = -2.7 + k*3.4;
+        R.armR.sh.rotation.x = -2.7 + k*3.4;
+        R.hips.rotation.x = -.2 + k*.55;
+        if (!giant._slammed){ giant._slammed = true; doSlam(); }
+      } else {
+        const k = Math.min(1,(t-.88)/.55);
+        R.armL.sh.rotation.x = (1-k)*.7; R.armR.sh.rotation.x = (1-k)*.7;
+        R.hips.rotation.x = (1-k)*.35;
+        if (k>=1){ giant.state='idle'; giant.t=0; giant._slammed=false; giant.throwCd = cfg.throwCd*.7; }
+      }
+      break;
     }
   }
 
-  for (let i=state.particles.length-1;i>=0;i--) {
-    const p = state.particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life--;
-    if (p.life<=0) state.particles.splice(i,1);
+  // 걷기 / 호흡
+  const bob = Math.sin(giant.t*1.6)*.06;
+  if (moving){
+    giant.walkPh += dt * cfg.speed * 1.5;
+    const s = Math.sin(giant.walkPh), c = Math.cos(giant.walkPh);
+    R.legL.hp.rotation.x =  s*.62;
+    R.legR.hp.rotation.x = -s*.62;
+    R.legL.kn.rotation.x = Math.max(0, -s)*.85;
+    R.legR.kn.rotation.x = Math.max(0,  s)*.85;
+    R.hips.position.y = 4.3 + Math.abs(c)*.28;
+    if (giant.state==='idle'){
+      R.armL.sh.rotation.x = -s*.42;
+      R.armR.sh.rotation.x =  s*.42;
+    }
+    // 발소리 진동
+    const ph = (giant.walkPh % Math.PI);
+    if (ph < dt*cfg.speed*1.5*1.02){
+      const d = player.pos.distanceTo(giant.pos);
+      shake(Math.max(0, .5 - d*.011) * cfg.scale);
+      burst(debris, _gv2.copy(giant.pos).setY(.15), 6, 0x584c38, {spd:3.5, size:.3, life:.9, up:.5, spread:.25});
+    }
+  } else {
+    R.legL.hp.rotation.x *= Math.max(0,1-dt*6);
+    R.legR.hp.rotation.x *= Math.max(0,1-dt*6);
+    R.legL.kn.rotation.x *= Math.max(0,1-dt*6);
+    R.legR.kn.rotation.x *= Math.max(0,1-dt*6);
+    R.hips.position.y = 4.3 + bob;
+    if (giant.state==='idle'){
+      R.armL.sh.rotation.x += (bob*.6 - R.armL.sh.rotation.x)*Math.min(1,dt*5);
+      R.armR.sh.rotation.x += (bob*.6 - R.armR.sh.rotation.x)*Math.min(1,dt*5);
+    }
+  }
+
+  // 포효 시 눈 발광
+  if (giant.roar > 0){ giant.roar -= dt; R.eyeLight.intensity = 2.4 + Math.sin(giant.roar*40)*2.4; }
+  else R.eyeLight.intensity = 2.4 + Math.sin(giant.t*3)*0.5;
+
+  R.root.position.copy(giant.pos);
+  R.root.rotation.y = giant.yaw;
+
+  // 전용 조명이 거인을 따라다닌다
+  giantKey.position.set(giant.pos.x + 6, 30, giant.pos.z + 14);
+  giantKey.target.position.copy(giant.pos).setY(R.height*0.45);
+  giantKey.target.updateMatrixWorld();
+  giantRim.position.set(giant.pos.x - 7, R.height*0.85, giant.pos.z - 9);
+}
+
+// ============================================================================
+//  거인의 공격
+// ============================================================================
+const rocks = [];
+const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+const rockMat = new THREE.MeshStandardMaterial({ color:0x6a5c47, roughness:.95, flatShading:true });
+
+function throwRocks(){
+  const cfg = giant.cfg;
+  const from = giantHeadWorld(new THREE.Vector3());
+  giant.rig.armR.anchor.getWorldPosition(from);
+  for (let n=0; n<cfg.rocks; n++){
+    // 플레이어의 이동을 조금 예측한 지점을 노린다
+    const lead = 0.28 + Math.random()*0.25;
+    const tx = player.pos.x + player.vel.x*lead + (Math.random()-.5)*5;
+    const tz = player.pos.z + player.vel.z*lead + (Math.random()-.5)*5;
+    const target = new THREE.Vector3(tx, 0, tz);
+
+    const d = Math.hypot(tx-from.x, tz-from.z);
+    const T = Math.max(.65, d / cfg.rockSpd);
+    const G = 26;
+    const vel = new THREE.Vector3(
+      (tx-from.x)/T,
+      (0 - from.y)/T + .5*G*T,
+      (tz-from.z)/T
+    );
+    const size = .55 + Math.random()*.35;
+    const m = new THREE.Mesh(rockGeo, rockMat);
+    m.scale.setScalar(size*giant.cfg.scale*1.4);
+    m.position.copy(from);
+    m.castShadow = true;
+    scene.add(m);
+
+    // 착탄 예고 링
+    const warn = new THREE.Mesh(new THREE.PlaneGeometry(7,7),
+      new THREE.MeshBasicMaterial({ map:TEX.warn, transparent:true, depthWrite:false, opacity:.85, fog:false }));
+    warn.rotation.x = -Math.PI/2;
+    warn.position.set(tx, .06, tz);
+    scene.add(warn);
+
+    rocks.push({ m, vel, warn, target, G, t:0, T,
+                 rot:new THREE.Vector3((Math.random()-.5)*7,(Math.random()-.5)*7,(Math.random()-.5)*7) });
   }
 }
 
-// ---------- 메인 루프 ----------
-function loop() {
-  ctx.save();
-  if (state.shake > 0.5) {
-    ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
-  }
-  ctx.clearRect(-50,-50,canvas.width+100,canvas.height+100);
-  drawGround();
-  drawGiant();
-  drawGiantProjectiles();
-  drawBullets();
-  drawParticles();
-  drawPlayerGun();
-  ctx.restore();
-  drawCrosshair();
+function rockImpact(r){
+  const p = r.m.position.clone(); p.y = 0;
+  const R_dmg = 4.6;
+  burst(debris, p, 34, 0x6f6046, { spd:12, size:.42, life:1.5, up:1.0, spread:.55 });
+  burst(sparks, p, 18, 0xffa347, { spd:9,  size:.5,  life:.55, up:1.2, grav:-6, drag:2.2, spread:.6 });
+  shockwave(p, 9, 0xffb066, .5);
+  scorchMark(p, 3.4);
+  flashLight(p.clone().setY(1.2), 0xff9040, 60, .28, 26);
+  Sfx.boom();
 
-  update();
-  requestAnimationFrame(loop);
+  const d = player.pos.distanceTo(p);
+  if (d < R_dmg){
+    const k = 1 - d/R_dmg;
+    damagePlayer(giant.cfg.rockDmg * (0.55 + k*0.65));
+    shake(1.5*k + .5);
+  } else {
+    shake(Math.max(0, .8 - d*.05));
+  }
+  scene.remove(r.m);
+  scene.remove(r.warn); r.warn.geometry.dispose(); r.warn.material.dispose();
 }
 
-loadStage(0);
-loop();
+function updateRocks(dt){
+  for (let i=rocks.length-1;i>=0;i--){
+    const r = rocks[i];
+    r.t += dt;
+    r.vel.y -= r.G*dt;
+    r.m.position.addScaledVector(r.vel, dt);
+    r.m.rotation.x += r.rot.x*dt; r.m.rotation.y += r.rot.y*dt; r.m.rotation.z += r.rot.z*dt;
+    // 예고 링 펄스
+    const k = Math.min(1, r.t/r.T);
+    const s = 1 + (1-k)*0.35;
+    r.warn.scale.setScalar(s);
+    r.warn.material.opacity = .35 + .55*Math.abs(Math.sin(r.t*10));
+    if (Math.random() < dt*30){
+      burst(sparks, r.m.position, 1, 0xff8a3c, {spd:1.2, size:.28, life:.4, grav:-2, drag:1});
+    }
+    if (r.m.position.y <= .35 || r.t > r.T + 1.2){
+      rockImpact(r); rocks.splice(i,1);
+    }
+  }
+}
+
+function doSlam(){
+  const p = giant.pos.clone();
+  const R_dmg = 12 * giant.cfg.scale;
+  shockwave(p, R_dmg*2.2, 0xffd08a, .65);
+  shockwave(p, R_dmg*1.4, 0xff6a3a, .45);
+  burst(debris, p.clone().setY(.3), 60, 0x6a5c44, { spd:16, size:.5, life:1.7, up:.9, spread:.4 });
+  flashLight(p.clone().setY(1.5), 0xffa050, 80, .3, 34);
+  Sfx.boom(); shake(2.2);
+
+  const d = player.pos.distanceTo(p);
+  if (d < R_dmg){
+    damagePlayer(giant.cfg.slamDmg * (0.5 + (1-d/R_dmg)*0.7));
+    player.vel.addScaledVector(_gv.copy(player.pos).sub(p).setY(0).normalize(), 14);
+  }
+}
+
+// ============================================================================
+//  플레이어
+// ============================================================================
+const player = {
+  pos: new THREE.Vector3(0, 0, 16),
+  vel: new THREE.Vector3(),
+  yaw: 0, pitch: 0,
+  hp: 100, maxHp: 100,
+  ammo: 6, mag: 6, reloading: false, reloadT: 0,
+  fireCd: 0, bob: 0, sprint: false,
+  dashCd: 0, dashT: 0, dashDir: new THREE.Vector3(),
+  alive: true
+};
+
+const keys = {};
+addEventListener('keydown', e => {
+  const k = e.code;
+  keys[k] = true;
+  if (k === 'KeyR') startReload();
+  if (k === 'Space'){ e.preventDefault(); tryDash(); }
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+// 포인터 락 (차단된 환경에서는 자유 조준 모드로 대체)
+let locked = false, everLocked = false, lockBlocked = false;
+function requestLock(){
+  if (lockBlocked || document.pointerLockElement === canvas) return;
+  try {
+    const r = canvas.requestPointerLock();
+    if (r && typeof r.catch === 'function') r.catch(() => { lockBlocked = true; });
+  } catch(e) { lockBlocked = true; }
+}
+canvas.addEventListener('click', () => { if (game.running && !game.modal) requestLock(); });
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === canvas;
+  if (locked){ everLocked = true; lockBlocked = false; }
+  else if (everLocked && game.running && !game.modal) showPause();
+});
+document.addEventListener('pointerlockerror', () => { lockBlocked = true; });
+// 포인터 락이 한 번도 걸린 적 없으면(iframe·구형 브라우저 등) 자유 조준 모드로 동작
+function aimActive(){ return locked || (!everLocked && game.running && !game.modal); }
+document.addEventListener('mousemove', e => {
+  if (!aimActive()) return;
+  const s = 0.0022;
+  player.yaw   -= (e.movementX || 0) * s;
+  player.pitch -= (e.movementY || 0) * s;
+  player.pitch = Math.max(-1.35, Math.min(1.35, player.pitch));
+});
+document.addEventListener('mousedown', e => {
+  if (e.button === 0 && aimActive()) fire();
+});
+
+function tryDash(){
+  if (!game.running || game.modal || player.dashCd > 0 || !player.alive) return;
+  const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const r = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+  const d = new THREE.Vector3();
+  if (keys.KeyW) d.add(f);
+  if (keys.KeyS) d.sub(f);
+  if (keys.KeyD) d.add(r);
+  if (keys.KeyA) d.sub(r);
+  if (d.lengthSq() < .01) d.copy(f).negate();
+  d.normalize();
+  player.dashDir.copy(d);
+  player.dashT = .22; player.dashCd = 1.5;
+  burst(debris, player.pos.clone().setY(.2), 10, 0x60543f, {spd:5, size:.25, life:.7, up:.4, spread:.3});
+}
+
+function updatePlayer(dt){
+  if (!player.alive) return;
+
+  const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const r = new THREE.Vector3( Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+  const wish = new THREE.Vector3();
+  if (keys.KeyW) wish.add(f);
+  if (keys.KeyS) wish.sub(f);
+  if (keys.KeyD) wish.add(r);
+  if (keys.KeyA) wish.sub(r);
+  const moving = wish.lengthSq() > .01;
+  if (moving) wish.normalize();
+
+  player.sprint = !!keys.ShiftLeft && moving && !player.reloading;
+  const speed = player.sprint ? 11.5 : 7.4;
+
+  if (player.dashCd > 0) player.dashCd -= dt;
+  if (player.dashT > 0){
+    player.dashT -= dt;
+    player.vel.copy(player.dashDir).multiplyScalar(26);
+  } else {
+    const target = wish.multiplyScalar(speed);
+    const accel = moving ? 15 : 11;
+    player.vel.x += (target.x - player.vel.x) * Math.min(1, accel*dt);
+    player.vel.z += (target.z - player.vel.z) * Math.min(1, accel*dt);
+  }
+
+  player.pos.addScaledVector(player.vel, dt);
+
+  // 투기장 경계
+  const rr = Math.hypot(player.pos.x, player.pos.z);
+  if (rr > ARENA_R-2){
+    player.pos.multiplyScalar((ARENA_R-2)/rr);
+    player.vel.multiplyScalar(.4);
+  }
+  // 엄폐물 충돌
+  for (const c of covers){
+    const dx = player.pos.x-c.x, dz = player.pos.z-c.z;
+    const d = Math.hypot(dx,dz), min = c.r + .55;
+    if (d < min && d > 0.001){
+      player.pos.x = c.x + dx/d*min;
+      player.pos.z = c.z + dz/d*min;
+    }
+  }
+  // 거인 몸통 충돌
+  {
+    const dx = player.pos.x-giant.pos.x, dz = player.pos.z-giant.pos.z;
+    const d = Math.hypot(dx,dz), min = 2.6*giant.cfg.scale;
+    if (!giant.dead && d < min && d > .001){
+      player.pos.x = giant.pos.x + dx/d*min;
+      player.pos.z = giant.pos.z + dz/d*min;
+    }
+  }
+
+  // 머리 흔들림
+  const sp = Math.hypot(player.vel.x, player.vel.z);
+  player.bob += dt * sp * 1.1;
+  const bobY = Math.sin(player.bob*2) * Math.min(.075, sp*.008);
+  const bobX = Math.cos(player.bob)   * Math.min(.055, sp*.006);
+
+  camera.position.set(bobX, EYE_H + bobY, 0);
+  camRig.position.copy(player.pos);
+  camRig.rotation.set(0, player.yaw, 0);
+  camera.rotation.set(player.pitch + recoil.pitch, 0, bobX*.35 + recoil.roll, 'YXZ');
+
+  // 시야각 (질주 / 조준)
+  const wantFov = player.sprint ? 84 : 76;
+  camera.fov += (wantFov - camera.fov) * Math.min(1, dt*8);
+  camera.updateProjectionMatrix();
+
+  // 재장전 진행
+  if (player.reloading){
+    player.reloadT -= dt;
+    const k = 1 - player.reloadT/RELOAD_TIME;
+    document.getElementById('reloadArc').style.strokeDashoffset = String(100.5*(1-k));
+    if (player.reloadT <= 0){
+      player.reloading = false;
+      player.ammo = player.mag;
+      updateAmmoUI();
+      document.getElementById('reloadRing').classList.remove('show');
+    }
+  }
+  if (player.fireCd > 0) player.fireCd -= dt;
+}
+
+function damagePlayer(amount){
+  if (!player.alive || !game.running) return;
+  player.hp = Math.max(0, player.hp - amount);
+  updateHpUI();
+  Sfx.hurt();
+  const h = document.getElementById('hurt');
+  h.style.transition = 'opacity .05s';
+  h.style.opacity = String(Math.min(.95, .35 + amount/45));
+  setTimeout(()=>{ h.style.transition='opacity .5s'; h.style.opacity='0'; }, 90);
+  if (player.hp <= 0) loseGame();
+}
+
+// ============================================================================
+//  무기 (뷰모델)
+// ============================================================================
+const recoil = { pitch:0, roll:0, vp:0 };
+const RELOAD_TIME = 1.15;
+const FIRE_CD = 0.16;
+
+const gun = new THREE.Group();
+{
+  const body  = new THREE.MeshStandardMaterial({ color:0x23262c, roughness:.45, metalness:.85 });
+  const grip  = new THREE.MeshStandardMaterial({ color:0x39281c, roughness:.8,  metalness:.1 });
+  const gold  = new THREE.MeshStandardMaterial({ color:0xc8a24a, roughness:.3,  metalness:1 });
+
+  const rec = new THREE.Mesh(new THREE.BoxGeometry(.11,.13,.42), body);
+  rec.position.set(0,0,-.05); gun.add(rec);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(.032,.036,.75,12), body);
+  bar.rotation.x = Math.PI/2; bar.position.set(0,.028,-.5); gun.add(bar);
+  const und = new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.6,10), gold);
+  und.rotation.x = Math.PI/2; und.position.set(0,-.045,-.44); gun.add(und);
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.2,12), gold);
+  cyl.rotation.x = Math.PI/2; cyl.position.set(0,0,-.03); gun.add(cyl);
+  const gp = new THREE.Mesh(new THREE.BoxGeometry(.09,.3,.13), grip);
+  gp.position.set(0,-.19,.12); gp.rotation.x = .28; gun.add(gp);
+  const st = new THREE.Mesh(new THREE.BoxGeometry(.085,.14,.3), grip);
+  st.position.set(0,-.05,.28); gun.add(st);
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(.02,.045,.02), gold);
+  sight.position.set(0,.09,-.82); gun.add(sight);
+
+  gun.traverse(o => { if(o.isMesh){ o.castShadow = false; o.renderOrder = 5; o.material.depthTest = true; } });
+
+  gun.position.set(.26, -.22, -.52);
+  gun.rotation.set(0, .06, 0);
+  camera.add(gun);
+}
+const muzzle = new THREE.Object3D(); muzzle.position.set(0,.03,-.9); gun.add(muzzle);
+const muzzleLight = new THREE.PointLight(0xffb95e, 0, 16, 2);
+muzzle.add(muzzleLight);
+const muzzleFlash = new THREE.Mesh(
+  new THREE.SphereGeometry(.11, 8, 6),
+  new THREE.MeshBasicMaterial({ color:0xfff0b0, transparent:true, opacity:0, fog:false, blending:THREE.AdditiveBlending, depthWrite:false })
+);
+muzzleFlash.position.copy(muzzle.position); gun.add(muzzleFlash);
+
+const gunSway = { x:0, y:0, kick:0 };
+
+function updateGun(dt){
+  // 이동에 따른 흔들림
+  const sp = Math.hypot(player.vel.x, player.vel.z);
+  const t = performance.now()*0.001;
+  const swayX = Math.sin(t*7)*Math.min(.028, sp*.0032);
+  const swayY = Math.cos(t*14)*Math.min(.02, sp*.0024);
+
+  gunSway.kick += (0 - gunSway.kick) * Math.min(1, dt*11);
+
+  const sprintOff = player.sprint ? .11 : 0;
+  const reloadOff = player.reloading ? .2 : 0;
+  const rp = player.reloading ? (1 - Math.abs(player.reloadT/RELOAD_TIME - .5)*2) : 0;
+
+  gun.position.x += (.26 + swayX + sprintOff*.4 - gunSway.kick*.02 - gun.position.x) * Math.min(1, dt*14);
+  gun.position.y += (-.22 + swayY - reloadOff*rp - gunSway.kick*.03 - gun.position.y) * Math.min(1, dt*14);
+  gun.position.z += (-.52 + gunSway.kick*.14 - gun.position.z) * Math.min(1, dt*16);
+  gun.rotation.x += ((player.sprint?-.22:0) - rp*.55 + gunSway.kick*.5 - gun.rotation.x) * Math.min(1, dt*13);
+  gun.rotation.z += ((player.sprint? .35:0) + rp*.6 - gun.rotation.z) * Math.min(1, dt*12);
+
+  muzzleLight.intensity += (0 - muzzleLight.intensity) * Math.min(1, dt*26);
+  muzzleFlash.material.opacity += (0 - muzzleFlash.material.opacity) * Math.min(1, dt*30);
+  muzzleFlash.scale.setScalar(1 + muzzleFlash.material.opacity*1.4);
+
+  recoil.pitch += (0 - recoil.pitch) * Math.min(1, dt*9);
+  recoil.roll  += (0 - recoil.roll)  * Math.min(1, dt*9);
+}
+
+const ray = new THREE.Raycaster();
+const _dir = new THREE.Vector3(), _origin = new THREE.Vector3();
+
+function fire(){
+  if (!game.running || game.modal || !player.alive) return;
+  if (player.reloading || player.fireCd > 0) return;
+  if (player.ammo <= 0){ startReload(); return; }
+
+  player.ammo--; updateAmmoUI();
+  player.fireCd = FIRE_CD;
+  Sfx.shot();
+
+  // 반동
+  gunSway.kick = 1;
+  recoil.pitch += 0.045 + Math.random()*0.02;
+  recoil.roll  += (Math.random()-.5)*0.03;
+  shake(.35);
+  muzzleLight.intensity = 28;
+  muzzleFlash.material.opacity = 1;
+
+  camera.getWorldPosition(_origin);
+  camera.getWorldDirection(_dir);
+  // 이동 중 정확도 저하
+  const sp = Math.hypot(player.vel.x, player.vel.z);
+  const spread = Math.min(.028, sp*.0022) + (player.sprint?.018:0);
+  _dir.x += (Math.random()-.5)*spread;
+  _dir.y += (Math.random()-.5)*spread;
+  _dir.z += (Math.random()-.5)*spread;
+  _dir.normalize();
+
+  ray.set(_origin, _dir);
+  ray.far = 300;
+
+  const muzzleWorld = new THREE.Vector3();
+  muzzle.getWorldPosition(muzzleWorld);
+
+  let hitPoint = _origin.clone().addScaledVector(_dir, 200);
+  let hitObj = null;
+
+  if (giant.rig && !giant.dead){
+    const hits = ray.intersectObjects(giant.rig.hit, false);
+    if (hits.length){ hitObj = hits[0]; hitPoint = hits[0].point.clone(); }
+  }
+  if (!hitObj){
+    const gh = ray.intersectObject(ground, false);
+    if (gh.length) { hitPoint = gh[0].point.clone(); }
+  }
+
+  tracer(muzzleWorld, hitPoint);
+  game.shots++;
+
+  if (hitObj){
+    const part = hitObj.object.userData.part;
+    const crit = part === 'head';
+    const dmg  = crit ? DMG_HEAD : part === 'body' ? DMG_BODY : DMG_LIMB;
+    hitGiant(dmg, crit, hitPoint, part);
+  } else {
+    burst(debris, hitPoint, 8, 0x6b5f47, { spd:5, size:.2, life:.7, up:.7, spread:.5 });
+    burst(sparks, hitPoint, 4, 0xffc07a, { spd:6, size:.18, life:.3, grav:-4, drag:3, spread:.7 });
+  }
+
+  if (player.ammo === 0) setTimeout(startReload, 180);
+  crossSpread();
+}
+
+function startReload(){
+  if (player.reloading || player.ammo === player.mag || !player.alive || !game.running) return;
+  player.reloading = true;
+  player.reloadT = RELOAD_TIME;
+  Sfx.reload();
+  document.getElementById('reloadRing').classList.add('show');
+  document.getElementById('reloadHint').classList.remove('show');
+}
+
+// ============================================================================
+//  거인 피격
+// ============================================================================
+function hitGiant(dmg, crit, point, part){
+  giant.hp = Math.max(0, giant.hp - dmg);
+  giant.flash = 0.12;
+  game.hits++;
+  if (crit) game.crits++;
+
+  Sfx.hit(crit);
+  hitmarker(crit);
+  updateBossUI();
+  damageNumber(point, Math.round(dmg), crit);
+
+  const col = crit ? 0xffe066 : 0xc0392b;
+  burst(sparks, point, crit?26:12, col, { spd:crit?12:7, size:crit?.34:.24, life:.5, grav:-8, drag:2.4, spread:.8 });
+  burst(debris, point, crit?14:7, 0x7d1f1f, { spd:6, size:.2, life:1.1, up:.5, spread:.7 });
+  if (crit) flashLight(point, 0xffdd66, 26, .22, 14);
+
+  shake(crit ? 0.9 : 0.35);
+
+  if (crit && giant.stun <= 0 && !giant.dead){
+    giant.stun = 2.1;
+    giant.state = 'stun';
+    giant._thrown = false; giant._slammed = false;
+    toast('⭐ 기절! 지금이 기회다');
+  }
+  if (giant.hp <= 0 && !giant.dead) killGiant();
+}
+
+function killGiant(){
+  giant.dead = true; giant.deathT = 0;
+  Sfx.roar(.7);
+  setTimeout(()=>Sfx.win(), 700);
+  shake(2.4);
+  const p = giant.pos.clone().setY(giant.rig.height*.5);
+  burst(sparks, p, 60, 0xffb14d, { spd:16, size:.5, life:1.2, grav:-6, drag:1.4, spread:.9 });
+  burst(debris, p, 50, 0x6b5f45, { spd:13, size:.45, life:1.8, up:.6, spread:.8 });
+  shockwave(giant.pos, 16, 0xffc36a, .8);
+  flash(.55);
+  setTimeout(stageCleared, 1500);
+}
+
+// ============================================================================
+//  화면 흔들림
+// ============================================================================
+let shakeAmt = 0;
+function shake(a){ shakeAmt = Math.min(3.2, shakeAmt + a); }
+function applyShake(dt){
+  shakeAmt *= Math.max(0, 1 - dt*4.2);
+  if (shakeAmt > .002){
+    const s = shakeAmt*0.055;
+    camRig.position.x += (Math.random()-.5)*s*2;
+    camRig.position.y += (Math.random()-.5)*s*2;
+    camRig.position.z += (Math.random()-.5)*s*2;
+    camera.rotation.z += (Math.random()-.5)*s*0.9;
+  }
+}
+
+// ============================================================================
+//  HUD
+// ============================================================================
+const el = id => document.getElementById(id);
+
+function updateHpUI(){
+  const k = Math.max(0, player.hp)/player.maxHp*100;
+  el('playerBar').style.width = k+'%';
+  el('playerGhost').style.width = k+'%';
+  el('hpNum').innerHTML = `${Math.ceil(Math.max(0,player.hp))}<small> / ${player.maxHp}</small>`;
+}
+function updateAmmoUI(){
+  const a = el('ammo');
+  a.innerHTML = `${player.ammo}<span class="mag"> / ${player.mag}</span>`;
+  a.classList.toggle('low', player.ammo <= 2);
+  el('reloadHint').classList.toggle('show', player.ammo <= 2 && !player.reloading);
+}
+function updateBossUI(){
+  const k = giant.hp/giant.maxHp*100;
+  el('bossBar').style.width = k+'%';
+  el('bossGhost').style.width = k+'%';
+}
+function hitmarker(crit){
+  const h = el('hitmark');
+  h.querySelector('g').setAttribute('stroke', crit ? '#ffd45e' : '#ffffff');
+  h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
+}
+function crossSpread(){
+  const c = el('cross');
+  c.classList.add('spread');
+  clearTimeout(crossSpread._t);
+  crossSpread._t = setTimeout(()=>c.classList.remove('spread'), 90);
+}
+function flash(a){
+  const f = el('flash');
+  f.style.transition='opacity .04s'; f.style.opacity=String(a);
+  setTimeout(()=>{ f.style.transition='opacity .4s'; f.style.opacity='0'; }, 60);
+}
+function banner(top, main){
+  const b = el('banner');
+  el('bTop').textContent = top; el('bMain').textContent = main;
+  b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'), 2600);
+}
+function toast(text){
+  const t = el('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+// 3D 공간에 뜨는 데미지 숫자
+const dmgTags = [];
+function damageNumber(worldPos, value, crit){
+  const d = document.createElement('div');
+  d.textContent = (crit ? '치명타 ' : '') + value;
+  d.style.cssText = `position:absolute;font-weight:900;white-space:nowrap;
+    font-size:${crit?30:19}px;color:${crit?'#ffd45e':'#ffffff'};
+    text-shadow:0 0 12px ${crit?'rgba(255,180,40,.9)':'rgba(0,0,0,.9)'},0 2px 5px #000;
+    transform:translate(-50%,-50%);pointer-events:none;`;
+  el('dmgTag').appendChild(d);
+  dmgTags.push({ e:d, p:worldPos.clone(), t:0, dur:1.0, off:(Math.random()-.5)*0.9 });
+}
+const _proj = new THREE.Vector3();
+function updateDmgTags(dt){
+  for (let i=dmgTags.length-1;i>=0;i--){
+    const g = dmgTags[i];
+    g.t += dt;
+    if (g.t >= g.dur){ g.e.remove(); dmgTags.splice(i,1); continue; }
+    const k = g.t/g.dur;
+    _proj.copy(g.p); _proj.y += k*1.6; _proj.x += g.off*k;
+    _proj.project(camera);
+    if (_proj.z > 1){ g.e.style.display='none'; continue; }
+    g.e.style.display = 'block';
+    g.e.style.left = ((_proj.x*.5+.5)*innerWidth)+'px';
+    g.e.style.top  = ((-_proj.y*.5+.5)*innerHeight)+'px';
+    g.e.style.opacity = String(1 - Math.pow(k,2.2));
+  }
+}
+
+// 화면 밖에 있는 거인의 방향을 가장자리에 표시
+const _gp = new THREE.Vector3();
+function updateGiantPointer(){
+  const p = el('gPointer');
+  if (!giant.rig || giant.dead || !game.running || game.modal){ p.style.display='none'; return; }
+  _gp.copy(giant.pos); _gp.y = giant.rig.height*0.6;
+  _gp.project(camera);
+  const behind = _gp.z > 1;
+  const onScreen = !behind && Math.abs(_gp.x) < .82 && Math.abs(_gp.y) < .82;
+  if (onScreen){ p.style.display='none'; return; }
+
+  let x = _gp.x, y = _gp.y;
+  if (behind){ x = -x; y = -y; }
+  const len = Math.hypot(x,y) || 1;
+  x /= len; y /= len;
+  const rx = innerWidth*0.5 - 62, ry = innerHeight*0.5 - 62;
+  const px = innerWidth*0.5 + x*rx;
+  const py = innerHeight*0.5 - y*ry;
+  const ang = Math.atan2(-y, x) - Math.PI/2;
+  p.style.display = 'block';
+  p.style.left = px+'px';
+  p.style.top  = py+'px';
+  p.style.transform = `translate(-50%,-50%) rotate(${ang}rad)`;
+}
+
+// ============================================================================
+//  게임 흐름
+// ============================================================================
+const game = { running:false, modal:false, stage:0, shots:0, hits:0, crits:0, t0:0, elapsed:0, allClear:false };
+
+function loadStage(i){
+  const cfg = STAGES[i];
+  game.stage = i;
+  spawnGiant(cfg);
+
+  player.hp = Math.min(player.maxHp, player.hp + cfg.heal);
+  player.ammo = player.mag;
+  player.reloading = false;
+  player.pos.set(0, 0, 13);
+  player.vel.set(0,0,0);
+  player.yaw = 0; player.pitch = 0;
+  player.alive = true;
+  rocks.forEach(r => { scene.remove(r.m); scene.remove(r.warn); });
+  rocks.length = 0;
+
+  el('stageTitle').textContent = `STAGE ${i+1} / ${STAGES.length}`;
+  el('bossName').textContent = cfg.name;
+  el('bossSub').textContent = ['약점: 머리','머리를 노려 기절시켜라','투척이 빨라진다','돌진에 주의','최종 보스'][i];
+  el('boss').classList.add('show');
+  el('reloadRing').classList.remove('show');
+  updateHpUI(); updateAmmoUI(); updateBossUI();
+
+  banner(`STAGE ${i+1}`, cfg.name);
+  Sfx.roar(1 - i*0.06);
+  game.modal = false;
+  el('modal').classList.remove('on');
+}
+
+function showStats(){
+  const acc = game.shots ? Math.round(game.hits/game.shots*100) : 0;
+  el('sAcc').textContent = acc+'%';
+  el('sCrit').textContent = String(game.crits);
+  const s = Math.floor(game.elapsed);
+  el('sTime').textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function openModal(title, color, sub, btnText){
+  game.modal = true;
+  document.exitPointerLock();
+  el('mTitle').textContent = title;
+  el('mTitle').style.color = color;
+  el('mSub').innerHTML = sub;
+  el('btn').textContent = btnText;
+  showStats();
+  el('modal').classList.add('on');
+}
+
+function stageCleared(){
+  if (!game.running) return;
+  const last = game.stage === STAGES.length-1;
+  if (last){
+    game.allClear = true;
+    game.running = false;
+    openModal('🏆 ALL CLEAR', '#ffd45e',
+      `거인왕까지 모두 쓰러뜨렸습니다.<br>남은 체력 <b>${Math.ceil(player.hp)}</b>`,
+      '처음부터 다시');
+  } else {
+    game.running = false;
+    openModal(`STAGE ${game.stage+1} CLEAR`, '#8affa0',
+      `<b>${STAGES[game.stage].name}</b> 격파!<br>다음 스테이지에서 체력 +${STAGES[game.stage+1].heal} 회복`,
+      '다음 단계로');
+  }
+}
+
+function loseGame(){
+  if (!game.running) return;
+  player.alive = false;
+  game.running = false;
+  Sfx.lose();
+  flash(.3);
+  openModal('💀 사냥 실패', '#ff5545',
+    `STAGE ${game.stage+1} · <b>${STAGES[game.stage].name}</b>에게 쓰러졌습니다.`,
+    '처음부터 다시');
+}
+
+function showPause(){
+  if (!game.running || game.modal) return;
+  game.paused = true;
+  openModal('⏸ 일시정지', '#cfe0ff', '마우스가 해제되었습니다.', '계속하기');
+  game._pauseResume = true;
+}
+
+function fullReset(){
+  player.hp = player.maxHp;
+  game.shots = game.hits = game.crits = 0;
+  game.elapsed = 0;
+  game.allClear = false;
+  loadStage(0);
+  game.running = true;
+}
+
+el('btn').addEventListener('click', () => {
+  Sfx.init();
+  if (game._pauseResume){
+    game._pauseResume = false; game.paused = false; game.modal = false;
+    el('modal').classList.remove('on');
+    game.running = true;
+    requestLock();
+    return;
+  }
+  if (game.allClear || !player.alive){
+    fullReset();
+  } else {
+    loadStage(game.stage+1);
+    game.running = true;
+  }
+  requestLock();
+});
+
+// 시작
+el('loading').textContent = hasPost ? '준비 완료 · 블룸 활성화' : '준비 완료';
+el('start').addEventListener('click', () => {
+  Sfx.init();
+  el('start').style.display = 'none';
+  fullReset();
+  game.t0 = performance.now();
+  requestLock();
+});
+
+// ============================================================================
+//  메인 루프
+// ============================================================================
+const clock = new THREE.Clock();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+
+  // 횃불 흔들림
+  const tt = performance.now()*0.001;
+  for (const t of torches){
+    const f = .78 + Math.sin(tt*8 + t.ph)*.14 + Math.sin(tt*19.7 + t.ph*2)*.08;
+    t.lt.intensity = 22*f;
+    t.fire.scale.set(.85+f*.3, 1.1+f*.5, .85+f*.3);
+    t.fire.position.y = 5.1 + f*.06;
+  }
+
+  if (game.running && !game.modal){
+    game.elapsed += dt;
+    updatePlayer(dt);
+    updateGiant(dt);
+    updateRocks(dt);
+  } else {
+    // 정지 중에도 카메라 위치는 유지
+    camRig.position.copy(player.pos);
+    camRig.rotation.set(0, player.yaw, 0);
+    camera.rotation.set(player.pitch, 0, 0, 'YXZ');
+    if (giant.rig && giant.dead) updateGiant(dt);
+  }
+
+  updateGun(dt);
+  applyShake(dt);
+  sparks.update(dt);
+  debris.update(dt);
+  updateFx(dt);
+  updateDmgTags(dt);
+  updateGiantPointer();
+
+  // 그림자 카메라를 플레이어 주변으로 따라가게 한다
+  moon.target.position.copy(player.pos);
+  moon.position.set(player.pos.x-46, 62, player.pos.z-34);
+
+  // 창 크기가 바뀌었는데 resize 이벤트를 놓친 경우 보정
+  if (canvas.clientWidth && (canvas.width !== Math.floor(innerWidth*renderer.getPixelRatio()) ||
+      canvas.height !== Math.floor(innerHeight*renderer.getPixelRatio()))){
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+    composer && composer.setSize(innerWidth, innerHeight);
+  }
+
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+
+// 시작 화면 배경용으로 미리 한 스테이지 배치
+spawnGiant(STAGES[0]);
+giant.pos.set(0,0,-21);
+giant.rig.root.position.copy(giant.pos);
+camRig.position.copy(player.pos);
+camera.position.y = EYE_H;
+animate();
 </script>
 </body>
 </html>
