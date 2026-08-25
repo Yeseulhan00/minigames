@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <title>거인 사냥꾼 3D - 스테이지 모드</title>
 <style>
   :root{
@@ -11,6 +12,7 @@
     --gold:#ffd45e;
   }
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#05070d;
+    touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;
     font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#fff;user-select:none;}
   canvas{display:block;}
 
@@ -115,6 +117,14 @@
   #startCta{margin-top:46px;font-size:19px;font-weight:800;letter-spacing:3px;color:var(--gold);
     animation:pulse 1.6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+  @media (max-width: 620px), (max-height: 620px){
+    #start h1{font-size:min(13vw,54px);letter-spacing:3px;}
+    #start h2{font-size:11px;letter-spacing:7px;margin-bottom:28px;}
+    .keys{gap:9px;max-width:94vw;}
+    .key{padding:9px 12px;font-size:11px;min-width:0;flex:1 1 40%;}
+    .key b{font-size:13px;}
+    #startCta{margin-top:30px;font-size:15px;letter-spacing:2px;}
+  }
   #loading{position:absolute;bottom:28px;font-size:13px;color:#5f6f8c;letter-spacing:2px;}
 
   #dmgTag{position:absolute;left:0;top:0;pointer-events:none;}
@@ -123,6 +133,61 @@
     background:rgba(6,10,18,.45);padding:7px 13px;border-radius:7px;
     border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(4px);}
   #homeLink:hover{color:#fff;background:rgba(6,10,18,.7);}
+  body.touch #homeLink{display:none;}   /* 터치는 일시정지 버튼 → 모달의 목록 링크 사용 */
+
+  /* ---------- 터치 컨트롤 ---------- */
+  #touchUI{display:none;}
+  body.touch #touchUI{display:block;}
+  body.touch #cross{transform:translate(-50%,-50%) scale(.85);}
+
+  #stickBase{position:absolute;width:130px;height:130px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);
+    transform:translate(-50%,-50%);display:none;pointer-events:none;}
+  #stickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;border-radius:50%;
+    background:rgba(255,255,255,.28);border:2px solid rgba(255,255,255,.5);
+    transform:translate(-50%,-50%);}
+  #stickHint{position:absolute;left:96px;bottom:104px;transform:translate(-50%,50%);
+    width:130px;height:130px;border-radius:50%;border:2px dashed rgba(255,255,255,.14);
+    pointer-events:none;}
+  #stickHint b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.35);font-weight:700;}
+
+  .tbtn{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;font-weight:800;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.9);
+    background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.3);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);user-select:none;transition:transform .08s,background .08s;}
+  .tbtn:active,.tbtn.on{transform:scale(.92);background:rgba(255,255,255,.24);}
+  #btnFire{right:22px;bottom:96px;width:104px;height:104px;font-size:16px;letter-spacing:2px;
+    background:rgba(255,70,55,.24);border-color:rgba(255,120,100,.65);}
+  #btnReload{right:142px;bottom:112px;width:64px;height:64px;font-size:22px;}
+  #btnDash{right:36px;bottom:214px;width:64px;height:64px;font-size:20px;}
+  #btnDash.cool{opacity:.35;}
+
+  /* 터치 기기에서 HUD를 손가락과 겹치지 않게 위로 */
+  body.touch #left{left:12px;bottom:auto;top:104px;}
+  body.touch #left .barBg{width:150px;height:11px;}
+  body.touch #hpNum{font-size:19px;}
+  body.touch #stageTitle{font-size:11px;letter-spacing:2px;}
+  body.touch #hpLabel{display:none;}
+  body.touch #right{right:12px;bottom:auto;top:104px;}
+  body.touch #ammo{font-size:32px;}
+  body.touch #reloadHint{display:none;}
+  body.touch #boss{top:44px;width:min(560px,78vw);}
+  body.touch #bossName{font-size:14px;letter-spacing:2px;}
+  body.touch #banner .b2{font-size:30px;}
+  body.touch #mTitle{font-size:34px;}
+  body.touch #mSub{font-size:14px;}
+  body.touch #mStats{gap:22px;}
+  body.touch #mStats b{font-size:23px;}
+
+  #btnPause{position:absolute;top:8px;right:12px;z-index:31;pointer-events:auto;display:none;
+    width:36px;height:36px;border-radius:9px;align-items:center;justify-content:center;
+    font-size:15px;color:#fff;background:rgba(6,10,18,.5);border:1px solid rgba(255,255,255,.18);}
+  body.touch #btnPause{display:flex;}
+
+  #mHome{margin-top:18px;font-size:13px;color:#9fb0cd;text-decoration:none;letter-spacing:1px;
+    border-bottom:1px solid rgba(159,176,205,.35);padding-bottom:2px;}
+  #mHome:hover{color:#fff;}
 
   #gPointer{position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;
     text-align:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));}
@@ -185,6 +250,16 @@
   <div id="banner"><div class="b1" id="bTop">STAGE 1</div><div class="b2" id="bMain">작은 거인</div><div class="line"></div></div>
   <div id="toast"></div>
   <div id="dmgTag"></div>
+
+  <div id="touchUI">
+    <div id="stickHint"><b>이동</b></div>
+    <div id="stickBase"><div id="stickKnob"></div></div>
+    <div class="tbtn" id="btnFire">발사</div>
+    <div class="tbtn" id="btnReload">⟳</div>
+    <div class="tbtn" id="btnDash">»</div>
+  </div>
+  <div id="btnPause">❚❚</div>
+
   <div id="gPointer"><span>▲</span><em>거인</em></div>
 
   <div id="modal">
@@ -196,13 +271,14 @@
       <div><b id="sTime">0:00</b><span>시간</span></div>
     </div>
     <button id="btn">다음 단계</button>
+    <a id="mHome" href="../index.html">← 게임 목록으로</a>
   </div>
 </div>
 
 <div id="start">
   <h1>거인 사냥꾼</h1>
   <h2>3 D &nbsp; H U N T E R</h2>
-  <div class="keys">
+  <div class="keys" id="keysDesktop">
     <div class="key"><b>W A S D</b>이동</div>
     <div class="key"><b>SHIFT</b>전력 질주</div>
     <div class="key"><b>SPACE</b>회피 대시</div>
@@ -210,7 +286,15 @@
     <div class="key"><b>R</b>재장전</div>
     <div class="key"><b>ESC</b>일시정지</div>
   </div>
-  <div id="startCta">화면을 클릭하여 사냥 시작</div>
+  <div class="keys" id="keysTouch" style="display:none">
+    <div class="key"><b>왼쪽 화면</b>드래그해서 이동</div>
+    <div class="key"><b>오른쪽 화면</b>쓸어서 조준</div>
+    <div class="key"><b>발사</b>길게 눌러 연사</div>
+    <div class="key"><b>⟳</b>재장전</div>
+    <div class="key"><b>»</b>회피 대시</div>
+    <div class="key"><b>가로 화면</b>추천</div>
+  </div>
+  <div id="startCta">화면을 눌러 사냥 시작</div>
   <div id="loading">엔진 불러오는 중…</div>
 </div>
 
@@ -259,9 +343,28 @@ const DMG_HEAD  = 46, DMG_BODY = 18, DMG_LIMB = 11;
 // ============================================================================
 //  렌더러 / 씬
 // ============================================================================
+// 터치 기기 판별 + 저사양 프로파일
+// 주 입력이 손가락일 때만 터치 모드 (터치스크린 노트북은 마우스/키보드를 그대로 쓴다)
+let IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+const LOW = IS_TOUCH || (navigator.maxTouchPoints || 0) > 0 || Math.min(innerWidth, innerHeight) < 620;
+if (IS_TOUCH) document.body.classList.add('touch');
+
+// 판별이 빗나가도 실제로 화면을 만지는 순간 터치 모드로 전환
+function enableTouchMode(){
+  if (IS_TOUCH) return;
+  IS_TOUCH = true;
+  document.body.classList.add('touch');
+  lockBlocked = true; everLocked = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  const kd = document.getElementById('keysDesktop'), kt = document.getElementById('keysTouch');
+  if (kd) kd.style.display = 'none';
+  if (kt) kt.style.display = 'flex';
+}
+addEventListener('touchstart', enableTouchMode, { passive:true, capture:true });
+
 const canvas   = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, LOW ? 1.4 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
@@ -272,7 +375,8 @@ renderer.toneMappingExposure = 1.42;
 const scene  = new THREE.Scene();
 scene.fog    = new THREE.FogExp2(0x16223a, 0.0072);
 
-const camera = new THREE.PerspectiveCamera(76, innerWidth/innerHeight, 0.05, 600);
+const BASE_FOV = (innerHeight > innerWidth) ? 88 : 76;
+const camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth/innerHeight, 0.05, 600);
 const camRig = new THREE.Object3D();          // 흔들림/반동을 흡수하는 리그
 camRig.add(camera);
 scene.add(camRig);
@@ -281,7 +385,7 @@ let composer = null, bloom = null;
 if (hasPost) {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.42, 0.55, 0.86);
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth*(LOW?.5:1), innerHeight*(LOW?.5:1)), 0.42, 0.55, 0.86);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 }
@@ -355,7 +459,7 @@ const TEX = { ground:groundTexture(), warn:ringDecalTexture(), scorch:scorchText
 const moon = new THREE.DirectionalLight(0xcfe0ff, 2.6);
 moon.position.set(-46, 62, -34);
 moon.castShadow = true;
-moon.shadow.mapSize.set(2048,2048);
+moon.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
 moon.shadow.camera.near = 5; moon.shadow.camera.far = 200;
 const S = 70;
 moon.shadow.camera.left=-S; moon.shadow.camera.right=S;
@@ -558,8 +662,8 @@ class Particles {
     this.geo.attributes.aSize.needsUpdate    = true;
   }
 }
-const sparks = new Particles(1400, THREE.AdditiveBlending);
-const debris = new Particles(1200, THREE.NormalBlending);
+const sparks = new Particles(LOW ? 650 : 1400, THREE.AdditiveBlending);
+const debris = new Particles(LOW ? 550 : 1200, THREE.NormalBlending);
 
 const _c = new THREE.Color(), _v = new THREE.Vector3();
 function burst(sys, p, count, color, opt={}){
@@ -1200,8 +1304,104 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 
+// ---------------- 터치 컨트롤 ----------------
+// 왼쪽 절반: 가상 스틱으로 이동 / 오른쪽 절반: 쓸어서 조준 / 버튼: 발사·재장전·대시
+const tc = { moveId:null, ox:0, oy:0, mx:0, my:0, lookId:null, lx:0, ly:0, firing:false };
+let mouseHeld = false;
+
+const stickBase = document.getElementById('stickBase');
+const stickKnob = document.getElementById('stickKnob');
+const stickHint = document.getElementById('stickHint');
+const STICK_R = 58;
+
+function showStick(x, y){
+  stickBase.style.display = 'block';
+  stickBase.style.left = x+'px';
+  stickBase.style.top  = y+'px';
+  stickKnob.style.transform = 'translate(-50%,-50%)';
+  stickHint.style.opacity = '0';
+}
+function hideStick(){
+  stickBase.style.display = 'none';
+  stickHint.style.opacity = '';
+  tc.mx = tc.my = 0;
+}
+function touchPlayable(){
+  return game.running && !game.modal && document.getElementById('start').style.display === 'none';
+}
+const onBtn = t => !!(t && t.closest && t.closest('.tbtn'));
+
+document.addEventListener('touchstart', e => {
+  if (!IS_TOUCH || !touchPlayable()) return;
+  let used = false;
+  for (const t of e.changedTouches){
+    if (onBtn(t.target)) continue;
+    if (t.clientX < innerWidth*0.5 && tc.moveId === null){
+      tc.moveId = t.identifier; tc.ox = t.clientX; tc.oy = t.clientY; tc.mx = tc.my = 0;
+      showStick(t.clientX, t.clientY); used = true;
+    } else if (tc.lookId === null){
+      tc.lookId = t.identifier; tc.lx = t.clientX; tc.ly = t.clientY; used = true;
+    }
+  }
+  if (used) e.preventDefault();
+}, { passive:false });
+
+document.addEventListener('touchmove', e => {
+  if (!IS_TOUCH || !touchPlayable()) return;
+  let used = false;
+  for (const t of e.changedTouches){
+    if (t.identifier === tc.moveId){
+      let dx = t.clientX - tc.ox, dy = t.clientY - tc.oy;
+      const d = Math.hypot(dx, dy);
+      if (d > STICK_R){ dx *= STICK_R/d; dy *= STICK_R/d; }
+      tc.mx = dx/STICK_R; tc.my = dy/STICK_R;
+      stickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      used = true;
+    } else if (t.identifier === tc.lookId){
+      const dx = t.clientX - tc.lx, dy = t.clientY - tc.ly;
+      tc.lx = t.clientX; tc.ly = t.clientY;
+      player.yaw   -= dx * 0.0042;
+      player.pitch -= dy * 0.0042;
+      player.pitch = Math.max(-1.35, Math.min(1.35, player.pitch));
+      used = true;
+    }
+  }
+  if (used) e.preventDefault();
+}, { passive:false });
+
+function endTouches(e){
+  for (const t of e.changedTouches){
+    if (t.identifier === tc.moveId){ tc.moveId = null; hideStick(); }
+    if (t.identifier === tc.lookId){ tc.lookId = null; }
+  }
+}
+document.addEventListener('touchend', endTouches, { passive:true });
+document.addEventListener('touchcancel', endTouches, { passive:true });
+
+function bindTouchBtn(id, down, up){
+  const b = document.getElementById(id);
+  const on = e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); down && down(); };
+  const off = e => { if(e) e.preventDefault(); b.classList.remove('on'); up && up(); };
+  b.addEventListener('touchstart', on, { passive:false });
+  b.addEventListener('touchend', off, { passive:false });
+  b.addEventListener('touchcancel', off, { passive:false });
+  // 마우스가 달린 터치 기기 대비
+  b.addEventListener('mousedown', on);
+  b.addEventListener('mouseup', off);
+  b.addEventListener('mouseleave', () => { if (b.classList.contains('on')) off(); });
+}
+document.getElementById('btnPause').addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation();
+  tc.firing = false; tc.moveId = null; tc.lookId = null; hideStick();
+  showPause();
+});
+
+bindTouchBtn('btnFire',   () => { tc.firing = true; }, () => { tc.firing = false; });
+bindTouchBtn('btnReload', () => startReload());
+bindTouchBtn('btnDash',   () => tryDash());
+
 // 포인터 락 (차단된 환경에서는 자유 조준 모드로 대체)
-let locked = false, everLocked = false, lockBlocked = false;
+let locked = false, everLocked = false, lockBlocked = IS_TOUCH;
 function requestLock(){
   if (lockBlocked || document.pointerLockElement === canvas) return;
   try {
@@ -1219,15 +1419,18 @@ document.addEventListener('pointerlockerror', () => { lockBlocked = true; });
 // 포인터 락이 한 번도 걸린 적 없으면(iframe·구형 브라우저 등) 자유 조준 모드로 동작
 function aimActive(){ return locked || (!everLocked && game.running && !game.modal); }
 document.addEventListener('mousemove', e => {
-  if (!aimActive()) return;
+  if (IS_TOUCH || !aimActive()) return;
   const s = 0.0022;
   player.yaw   -= (e.movementX || 0) * s;
   player.pitch -= (e.movementY || 0) * s;
   player.pitch = Math.max(-1.35, Math.min(1.35, player.pitch));
 });
 document.addEventListener('mousedown', e => {
-  if (e.button === 0 && aimActive()) fire();
+  if (IS_TOUCH) return;
+  if (e.button === 0 && aimActive()){ mouseHeld = true; fire(); }
 });
+document.addEventListener('mouseup', e => { if (e.button === 0) mouseHeld = false; });
+addEventListener('blur', () => { mouseHeld = false; tc.firing = false; });
 
 function tryDash(){
   if (!game.running || game.modal || player.dashCd > 0 || !player.alive) return;
@@ -1238,6 +1441,8 @@ function tryDash(){
   if (keys.KeyS) d.sub(f);
   if (keys.KeyD) d.add(r);
   if (keys.KeyA) d.sub(r);
+  if (tc.moveId !== null && Math.hypot(tc.mx, tc.my) > .2)
+    d.addScaledVector(r, tc.mx).addScaledVector(f, -tc.my);
   if (d.lengthSq() < .01) d.copy(f).negate();
   d.normalize();
   player.dashDir.copy(d);
@@ -1250,15 +1455,19 @@ function updatePlayer(dt){
 
   const f = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
   const r = new THREE.Vector3( Math.cos(player.yaw), 0, -Math.sin(player.yaw));
-  const wish = new THREE.Vector3();
-  if (keys.KeyW) wish.add(f);
-  if (keys.KeyS) wish.sub(f);
-  if (keys.KeyD) wish.add(r);
-  if (keys.KeyA) wish.sub(r);
-  const moving = wish.lengthSq() > .01;
-  if (moving) wish.normalize();
+  let mvF = 0, mvR = 0;
+  if (keys.KeyW) mvF += 1;
+  if (keys.KeyS) mvF -= 1;
+  if (keys.KeyD) mvR += 1;
+  if (keys.KeyA) mvR -= 1;
+  if (tc.moveId !== null){ mvR += tc.mx; mvF -= tc.my; }
 
-  player.sprint = !!keys.ShiftLeft && moving && !player.reloading;
+  const wish = new THREE.Vector3().addScaledVector(f, mvF).addScaledVector(r, mvR);
+  const mag = wish.length();
+  const moving = mag > .08;
+  if (mag > 1) wish.multiplyScalar(1/mag);   // 아날로그 입력은 세기 유지
+
+  player.sprint = (!!keys.ShiftLeft || mag > .92) && moving && !player.reloading;
   const speed = player.sprint ? 11.5 : 7.4;
 
   if (player.dashCd > 0) player.dashCd -= dt;
@@ -1311,7 +1520,7 @@ function updatePlayer(dt){
   camera.rotation.set(player.pitch + recoil.pitch, 0, bobX*.35 + recoil.roll, 'YXZ');
 
   // 시야각 (질주 / 조준)
-  const wantFov = player.sprint ? 84 : 76;
+  const wantFov = BASE_FOV + (player.sprint ? 8 : 0);
   camera.fov += (wantFov - camera.fov) * Math.min(1, dt*8);
   camera.updateProjectionMatrix();
 
@@ -1328,6 +1537,14 @@ function updatePlayer(dt){
     }
   }
   if (player.fireCd > 0) player.fireCd -= dt;
+
+  // 발사 버튼 / 마우스 버튼을 누르고 있으면 연사
+  if ((tc.firing || mouseHeld) && player.fireCd <= 0) fire();
+
+  if (IS_TOUCH){
+    const db = document.getElementById('btnDash');
+    db.classList.toggle('cool', player.dashCd > 0);
+  }
 }
 
 function damagePlayer(amount){
@@ -1649,7 +1866,9 @@ function updateGiantPointer(){
   p.style.display = 'block';
   p.style.left = px+'px';
   p.style.top  = py+'px';
-  p.style.transform = `translate(-50%,-50%) rotate(${ang}rad)`;
+  p.style.transform = 'translate(-50%,-50%)';
+  // 글자는 세워두고 화살표만 회전
+  p.firstElementChild.style.transform = `rotate(${ang}rad)`;
 }
 
 // ============================================================================
@@ -1767,6 +1986,10 @@ el('btn').addEventListener('click', () => {
 });
 
 // 시작
+if (IS_TOUCH){
+  el('keysDesktop').style.display = 'none';
+  el('keysTouch').style.display = 'flex';
+}
 el('loading').textContent = hasPost ? '준비 완료 · 블룸 활성화' : '준비 완료';
 el('start').addEventListener('click', () => {
   Sfx.init();
