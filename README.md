@@ -15,6 +15,7 @@
 | [복셀 크래프트](games/voxel-craft.html) | 블록을 부수고 쌓는 3D 샌드박스 |
 | [좀비 서바이버](games/zombie-survivor.html) | 드래그로 이동, 가장 가까운 좀비에게 자동 사격 |
 | [사마귀 헌터](games/mantis-hunter.html) | 100스테이지 곤충 사냥. 10스테이지마다 보스 |
+| [잠입 감시 기록](games/building-escape.html) | CCTV 화면 속에서 증거 5점을 모아 탈출. 3구역 (키보드 전용) |
 | [카피바라의 온천 대모험](games/capybara-adventure.html) | 귤을 다 모아 온천으로. 벌은 피해서 |
 
 ### 키우기 · 퍼즐
