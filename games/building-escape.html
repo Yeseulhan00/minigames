@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>잠입 감시 기록</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+KR:wght@500;800;900&display=swap');
 
@@ -17,16 +18,17 @@
     --glass:#04120a;
   }
   *{box-sizing:border-box;}
-  html,body{
-    margin:0;height:100%;
+  html{ height:100%; }
+  body{
+    margin:0;min-height:100%;
     background:radial-gradient(ellipse at 50% 0%, #14181a 0%, #030403 65%);
     font-family:'Noto Sans KR',sans-serif;
     color:var(--phosphor);
-    display:flex;align-items:center;justify-content:center;
-    overflow:hidden;
+    display:flex;justify-content:center;
+    overflow-x:hidden;overflow-y:auto;
   }
-  .rig{ display:flex;flex-direction:column;align-items:center; gap:12px; padding:20px; }
-  .topline{ width:838px; display:flex; justify-content:space-between; align-items:flex-end; }
+  .rig{ margin:auto; width:100%; max-width:878px; display:flex;flex-direction:column;align-items:center; gap:12px; padding:20px; }
+  .topline{ width:100%; display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap; }
   .topline h1{
     font-family:'VT323',monospace; font-size:26px; letter-spacing:3px; margin:0;
     color:var(--phosphor); text-shadow:0 0 10px rgba(57,255,110,.55);
@@ -34,7 +36,7 @@
   }
   .topline .tag{ font-family:'VT323',monospace; font-size:16px; color:var(--phosphor-dim); letter-spacing:2px; }
 
-  .stagebar{ width:838px; display:flex; gap:8px; }
+  .stagebar{ width:100%; display:flex; gap:8px; }
   .stagebar .seg{
     flex:1; height:6px; border-radius:3px; background:#1a2420;
     border:1px solid #24352b; overflow:hidden; position:relative;
@@ -44,7 +46,7 @@
   .stagebar .seg.active .fill{ width:var(--p,0%); }
 
   .monitor{
-    position:relative; width:838px; padding:22px 22px 30px;
+    position:relative; width:100%; padding:22px 22px 30px;
     background:linear-gradient(155deg, var(--bezel-hi), var(--bezel) 40%, #0c0e0f 100%);
     border-radius:22px;
     box-shadow:0 30px 70px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06), inset 0 -2px 6px rgba(0,0,0,.6);
@@ -59,7 +61,7 @@
     box-shadow:inset 0 0 40px rgba(0,0,0,.9), inset 0 0 0 2px #000;
     background:var(--glass);
   }
-  canvas{ display:block; background:var(--glass); }
+  canvas{ display:block; width:100%; height:auto; background:var(--glass); touch-action:manipulation; }
 
   .fx{position:absolute; inset:0; pointer-events:none;}
   .fx.scan{
@@ -80,10 +82,50 @@
   @keyframes blink{ 50%{opacity:.15;} }
   .osd .evid{ position:absolute; bottom:10px; right:14px; font-size:18px; letter-spacing:1px;}
 
-  .footer{ width:838px; display:flex; justify-content:space-between; font-family:'VT323',monospace; font-size:16px; color:var(--phosphor-dim); letter-spacing:1px; }
+  .footer{ width:100%; display:flex; flex-wrap:wrap; gap:6px; justify-content:space-between; font-family:'VT323',monospace; font-size:16px; color:var(--phosphor-dim); letter-spacing:1px; }
   .footer a.home{ color:var(--phosphor-dim); text-decoration:none; border-bottom:1px dotted var(--phosphor-dim); }
   .footer a.home:hover{ color:var(--phosphor); border-bottom-color:var(--phosphor); }
   kbd{ background:#0c1a10; border:1px solid #1f4d2a; border-radius:3px; padding:0 6px; color:var(--phosphor); font-family:'VT323',monospace; }
+
+  /* ---------- 터치 조작 ---------- */
+  .touchpad{
+    display:none;
+    width:168px; height:168px;
+    grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    gap:6px; touch-action:none;
+  }
+  .touchpad .tp{
+    -webkit-tap-highlight-color:transparent; user-select:none; touch-action:none;
+    background:#0c1a10; border:1px solid #1f4d2a; border-radius:8px;
+    color:var(--phosphor); font-family:'VT323',monospace; font-size:24px; line-height:1;
+    display:flex; align-items:center; justify-content:center; padding:0;
+    box-shadow:inset 0 0 12px rgba(57,255,110,.08);
+  }
+  .touchpad .tp.held{ background:var(--phosphor-dim); color:#04120a; box-shadow:0 0 12px var(--phosphor); }
+  .tp.up{ grid-area:1/2; } .tp.left{ grid-area:2/1; }
+  .tp.right{ grid-area:2/3; } .tp.down{ grid-area:3/2; }
+
+  /* 터치 기기이거나 화면이 좁으면 D패드를 띄운다 */
+  @media (pointer:coarse), (max-width:900px){
+    .touchpad{ display:grid; }
+  }
+
+  /* ---------- 좁은 화면 ---------- */
+  @media (max-width:900px){
+    .rig{ padding:10px 8px 16px; gap:8px; }
+    .topline{ flex-direction:column; align-items:flex-start; gap:2px; }
+    .topline h1{ font-size:20px; letter-spacing:2px; }
+    .topline .tag{ font-size:12px; letter-spacing:1px; }
+    .monitor{ padding:10px 10px 14px; border-radius:14px; }
+    .screws{ display:none; }
+    .footer{ flex-direction:column; gap:4px; font-size:12px; line-height:1.5; }
+    /* 캔버스가 작아진 만큼 화면 위 OSD 글자도 같이 줄인다 */
+    .osd .cam-id, .osd .time{ font-size:13px; top:6px; }
+    .osd .cam-id{ left:8px; } .osd .time{ right:8px; }
+    .osd .lives{ font-size:12px; top:23px; left:8px; }
+    .osd .rec, .osd .evid{ font-size:12px; bottom:6px; }
+    .osd .rec{ left:8px; } .osd .evid{ right:8px; }
+  }
 </style>
 </head>
 <body>
@@ -120,6 +162,13 @@
   <div class="footer">
     <div><a class="home" href="../index.html">← 목록으로</a> · <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동</div>
     <div>경비원에게 발각되면 목숨 -1, 발각 지점부터 재개 · 목숨 0 = 처음부터 재시작</div>
+  </div>
+
+  <div class="touchpad" id="touchpad">
+    <button class="tp up" data-key="arrowup" aria-label="위로">▲</button>
+    <button class="tp left" data-key="arrowleft" aria-label="왼쪽으로">◀</button>
+    <button class="tp right" data-key="arrowright" aria-label="오른쪽으로">▶</button>
+    <button class="tp down" data-key="arrowdown" aria-label="아래로">▼</button>
   </div>
 </div>
 
@@ -487,6 +536,46 @@ function draw(){
     drawOverlay('TAPE ENDS :: 3개 구역 탈출 성공', '박물관·학교·아파트를 모두 빠져나왔습니다 — 아무 키나 눌러 다시 플레이', 'rgba(4,30,14,0.82)');
   }
 }
+
+// ---------- touch controls ----------
+// 게임 루프가 읽는 keys 객체를 그대로 채우므로 이동 로직은 손대지 않는다.
+const dpadButtons = Array.from(document.querySelectorAll('#touchpad .tp'));
+
+function releaseAllDpad(){
+  for(const btn of dpadButtons){
+    keys[btn.dataset.key] = false;
+    btn.classList.remove('held');
+  }
+}
+
+for(const btn of dpadButtons){
+  const release = ()=>{ keys[btn.dataset.key] = false; btn.classList.remove('held'); };
+
+  btn.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    // 시작/실패/클리어 화면에서는 첫 탭이 화면을 넘기는 역할을 한다
+    if(status !== 'play'){ tryAdvanceScreen(); return; }
+    keys[btn.dataset.key] = true;
+    btn.classList.add('held');
+    // 포인터를 잡아둬야 손가락이 버튼 밖으로 나가도 pointerup을 받는다
+    try{ btn.setPointerCapture(e.pointerId); }catch(err){}
+  });
+
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointercancel', release);
+  btn.addEventListener('lostpointercapture', release);
+  btn.addEventListener('contextmenu', e=> e.preventDefault());
+}
+
+// 어떤 이유로든 pointerup을 놓쳐 방향키가 눌린 채 남는 것을 막는 안전망
+window.addEventListener('pointerup', releaseAllDpad);
+window.addEventListener('pointercancel', releaseAllDpad);
+window.addEventListener('blur', releaseAllDpad);
+
+// 키보드가 없는 기기에서도 시작/재시작 화면을 넘길 수 있도록 화면 탭을 받는다
+canvas.addEventListener('pointerdown', e=>{
+  if(status !== 'play'){ e.preventDefault(); tryAdvanceScreen(); }
+});
 
 function loop(){ update(); draw(); requestAnimationFrame(loop); }
 loop();
