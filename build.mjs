@@ -5,6 +5,7 @@ import * as esbuild from "esbuild";
 const targets = [
   { entry: "src/capybara-pop.entry.jsx", out: "assets/capybara-pop.js" },
   { entry: "src/mafia.entry.jsx", out: "assets/mafia.js" },
+  { entry: "src/cowboy.entry.jsx", out: "assets/cowboy.js" },
 ];
 
 for (const { entry, out } of targets) {
