@@ -128,6 +128,97 @@
   #loading{position:absolute;bottom:28px;font-size:13px;color:#5f6f8c;letter-spacing:2px;}
 
   #dmgTag{position:absolute;left:0;top:0;pointer-events:none;}
+  /* ---------- 코인 · 무기 표시 ---------- */
+  #coin{margin-top:8px;font-size:22px;font-weight:900;color:var(--gold);letter-spacing:.5px;
+    transition:transform .12s;}
+  #coin small{font-size:11px;opacity:.6;letter-spacing:2px;font-weight:700;color:#cfd8ea;}
+  #coin.pop{transform:scale(1.22);}
+  #wpnName{font-size:12px;letter-spacing:2px;color:#9fb4d8;font-weight:700;margin-bottom:2px;}
+
+  /* ---------- 상점 ---------- */
+  #shop{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;
+    background:radial-gradient(ellipse at 50% -10%,#16203a 0%,#05070d 70%);
+    overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+  #shop.on{display:flex;}
+  #shopHead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:14px;
+    padding:16px 22px;background:rgba(5,8,14,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(255,255,255,.1);}
+  #shopHead h2{margin:0;font-size:19px;letter-spacing:4px;font-weight:900;flex:1;}
+  #shopCoin{font-size:22px;font-weight:900;color:var(--gold);white-space:nowrap;}
+  #shopClose{padding:9px 20px;font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;
+    color:#0d0f16;background:linear-gradient(180deg,#ffe08a,#f0a83c);border:none;border-radius:6px;
+    font-family:inherit;}
+  #shopBody{padding:20px 22px 60px;max-width:1080px;width:100%;box-sizing:border-box;margin:0 auto;}
+  .shopSec{font-size:12px;letter-spacing:4px;color:#7f92b5;font-weight:800;margin:24px 0 12px;}
+  .shopSec:first-child{margin-top:4px;}
+
+  .wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px;}
+  .wcard{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+    padding:15px;display:flex;flex-direction:column;gap:11px;transition:border-color .15s,background .15s;}
+  .wcard.equipped{border-color:rgba(255,212,94,.75);background:rgba(255,200,80,.08);}
+  .wcard.locked{opacity:.66;}
+  .wtop{display:flex;gap:11px;align-items:flex-start;}
+  .wemoji{font-size:28px;line-height:1;}
+  .wcard h4{margin:0 0 3px;font-size:16px;font-weight:800;}
+  .wcard .wdesc{margin:0;font-size:12px;color:#93a4c0;line-height:1.5;}
+  .wstats{display:flex;flex-direction:column;gap:5px;}
+  .wrow{display:flex;align-items:center;gap:8px;font-size:10px;color:#8ea0bd;letter-spacing:1px;}
+  .wrow span{width:34px;flex:none;}
+  .wbar{flex:1;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
+  .wbar i{display:block;height:100%;background:linear-gradient(90deg,#4dd2ff,#8affa0);}
+  .wact{margin-top:auto;padding:10px;border:none;border-radius:7px;font-family:inherit;
+    font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;color:#0d0f16;
+    background:linear-gradient(180deg,#ffe08a,#f0a83c);}
+  .wact.own{background:rgba(255,255,255,.13);color:#dbe6f7;}
+  .wact.cur{background:rgba(255,212,94,.2);color:var(--gold);cursor:default;}
+  .wact.no{background:rgba(255,255,255,.07);color:#6c7a92;cursor:not-allowed;}
+
+  .ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:11px;}
+  .ucard{display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:11px;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);}
+  .uinfo{flex:1;min-width:0;}
+  .uinfo h4{margin:0 0 4px;font-size:14px;font-weight:800;}
+  .uinfo p{margin:0;font-size:11px;color:#93a4c0;}
+  .upips{display:flex;gap:3px;margin-top:6px;}
+  .upips i{width:16px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);}
+  .upips i.on{background:linear-gradient(90deg,#ffd45e,#ff9a4d);}
+  .ubuy{padding:9px 14px;border:none;border-radius:7px;font-family:inherit;font-size:13px;
+    font-weight:800;cursor:pointer;color:#0d0f16;background:linear-gradient(180deg,#ffe08a,#f0a83c);
+    white-space:nowrap;}
+  .ubuy.no{background:rgba(255,255,255,.07);color:#6c7a92;cursor:not-allowed;}
+  .ubuy.max{background:rgba(255,212,94,.18);color:var(--gold);cursor:default;}
+
+  #shopFoot{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    margin-top:30px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);}
+  #shopHint{font-size:11px;color:#6c7a92;line-height:1.7;}
+  #shopReset{background:none;border:1px solid rgba(255,120,110,.35);color:#ff8a7a;
+    padding:8px 14px;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;}
+
+  .mBtns{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap;justify-content:center;}
+  #btn{margin-top:0;}
+  #btnShop{padding:15px 32px;font-size:18px;font-weight:800;letter-spacing:2px;cursor:pointer;
+    color:#ffe6a8;background:rgba(255,200,90,.14);border:1px solid rgba(255,200,90,.45);
+    border-radius:6px;font-family:inherit;transition:transform .12s,background .12s;}
+  #btnShop:hover{transform:translateY(-2px);background:rgba(255,200,90,.24);}
+  #startBtns{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;}
+  #startShop,#btnNew{padding:12px 26px;font-size:15px;font-weight:800;letter-spacing:2px;
+    cursor:pointer;color:#ffe6a8;background:rgba(255,200,90,.12);
+    border:1px solid rgba(255,200,90,.4);border-radius:7px;font-family:inherit;}
+  #btnNew{color:#9fb0cd;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);}
+  #btnNew[hidden]{display:none;}
+  #startProgress{margin-top:26px;font-size:14px;color:#9fb4d8;text-align:center;line-height:1.8;}
+  #startProgress b{color:var(--gold);font-size:17px;}
+
+  @media (max-width: 620px){
+    #shopHead{padding:12px 14px;gap:10px;}
+    #shopHead h2{font-size:14px;letter-spacing:2px;}
+    #shopCoin{font-size:17px;}
+    #shopClose{padding:8px 14px;font-size:12px;}
+    #shopBody{padding:14px 14px 50px;}
+    .wgrid,.ugrid{grid-template-columns:1fr;}
+    #shopFoot{flex-direction:column;align-items:stretch;}
+  }
+
   #homeLink{position:absolute;top:14px;left:18px;z-index:30;pointer-events:auto;
     color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;letter-spacing:1px;
     background:rgba(6,10,18,.45);padding:7px 13px;border-radius:7px;
@@ -234,9 +325,11 @@
     <div id="hpLabel">체력</div>
     <div class="barBg"><div class="barGhost" id="playerGhost"></div><div class="barFill" id="playerBar"></div></div>
     <div id="hpNum">100<small> / 100</small></div>
+    <div id="coin">0<small> COIN</small></div>
   </div>
 
   <div class="panel" id="right">
+    <div id="wpnName">리볼버</div>
     <div id="reloadHint">R — 재장전</div>
     <div id="ammo">6<span class="mag"> / 6</span></div>
     <svg id="reloadRing" viewBox="0 0 40 40">
@@ -270,7 +363,10 @@
       <div><b id="sCrit">0</b><span>헤드샷</span></div>
       <div><b id="sTime">0:00</b><span>시간</span></div>
     </div>
-    <button id="btn">다음 단계</button>
+    <div class="mBtns">
+      <button id="btnShop">🛒 상점</button>
+      <button id="btn">다음 단계</button>
+    </div>
     <a id="mHome" href="../index.html">← 게임 목록으로</a>
   </div>
 </div>
@@ -294,8 +390,34 @@
     <div class="key"><b>»</b>회피 대시</div>
     <div class="key"><b>가로 화면</b>추천</div>
   </div>
+  <div id="startProgress"></div>
+  <div id="startBtns">
+    <button id="startShop">🛒 상점 · 보유 <b id="startCoin">0</b> 💰</button>
+    <button id="btnNew" hidden>처음부터</button>
+  </div>
   <div id="startCta">화면을 눌러 사냥 시작</div>
   <div id="loading">엔진 불러오는 중…</div>
+</div>
+
+<div id="shop">
+  <div id="shopHead">
+    <h2>🛒 대장간 상점</h2>
+    <div id="shopCoin">0 💰</div>
+    <button id="shopClose">닫기</button>
+  </div>
+  <div id="shopBody">
+    <div class="shopSec">무기</div>
+    <div class="wgrid" id="wList"></div>
+    <div class="shopSec">총기 강화 · 모든 무기에 적용</div>
+    <div class="ugrid" id="uList"></div>
+    <div id="shopFoot">
+      <div id="shopHint">
+        코인은 거인을 쓰러뜨릴 때 가장 많이 들어옵니다. 헤드샷·명중률·남은 체력이 보너스로 붙습니다.<br>
+        구매 내역 · 코인 · 진행한 스테이지는 이 브라우저에 저장되어 다음 판에도 유지됩니다.
+      </div>
+      <button id="shopReset">진행 초기화</button>
+    </div>
+  </div>
 </div>
 
 <script type="importmap">
@@ -349,18 +471,36 @@ let IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 const LOW = IS_TOUCH || (navigator.maxTouchPoints || 0) > 0 || Math.min(innerWidth, innerHeight) < 620;
 if (IS_TOUCH) document.body.classList.add('touch');
 
-// 판별이 빗나가도 실제로 화면을 만지는 순간 터치 모드로 전환
+// 판별이 빗나가거나 마우스+터치를 겸용하는 기기를 위해 양방향으로 전환한다.
+// 손가락이 닿으면 터치 모드, 실제 마우스가 움직이면 다시 마우스 모드.
+const COARSE = IS_TOUCH;
+let lastTouchAt = 0;
+
+function setControlHints(){
+  const kd = document.getElementById('keysDesktop'), kt = document.getElementById('keysTouch');
+  if (kd) kd.style.display = IS_TOUCH ? 'none' : 'flex';
+  if (kt) kt.style.display = IS_TOUCH ? 'flex' : 'none';
+}
 function enableTouchMode(){
+  lastTouchAt = performance.now();
   if (IS_TOUCH) return;
   IS_TOUCH = true;
   document.body.classList.add('touch');
   lockBlocked = true; everLocked = false;
   if (document.pointerLockElement) document.exitPointerLock();
-  const kd = document.getElementById('keysDesktop'), kt = document.getElementById('keysTouch');
-  if (kd) kd.style.display = 'none';
-  if (kt) kt.style.display = 'flex';
+  setControlHints();
+}
+function disableTouchMode(){
+  if (!IS_TOUCH || COARSE) return;                      // 진짜 터치 전용 기기는 그대로 둔다
+  if (performance.now() - lastTouchAt < 900) return;    // 탭이 만들어낸 가짜 마우스 이벤트는 무시
+  IS_TOUCH = false;
+  document.body.classList.remove('touch');
+  lockBlocked = false;
+  tc.firing = false; tc.moveId = null; tc.lookId = null; hideStick();
+  setControlHints();
 }
 addEventListener('touchstart', enableTouchMode, { passive:true, capture:true });
+addEventListener('mousemove', e => { if (e.movementX || e.movementY) disableTouchMode(); }, true);
 
 const canvas   = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
@@ -813,6 +953,20 @@ const Sfx = {
       const o = this.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
       this.env(o, t+i*.19, .02, .5, .22); o.start(t+i*.19); o.stop(t+i*.19+.7);
     });
+  },
+  coin(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    [988,1319,1568].forEach((f,i)=>{
+      const o = this.ctx.createOscillator(); o.type='triangle'; o.frequency.value=f;
+      this.env(o, t+i*.06, .004, .2, .2); o.start(t+i*.06); o.stop(t+i*.06+.3);
+    });
+  },
+  buy(){
+    if(!this.ctx) return; const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(); o.type='square';
+    o.frequency.setValueAtTime(520,t); o.frequency.exponentialRampToValueAtTime(1046,t+.1);
+    this.env(o, t, .004, .16, .18); o.start(t); o.stop(t+.26);
+    this.env(this.noiseSrc(t,.2,'highpass',2400), t, .003, .12, .18);
   }
 };
 
@@ -1289,7 +1443,7 @@ const player = {
   vel: new THREE.Vector3(),
   yaw: 0, pitch: 0,
   hp: 100, maxHp: 100,
-  ammo: 6, mag: 6, reloading: false, reloadT: 0,
+  ammo: 6, mag: 6, reloading: false, reloadT: 0, reloadTime: 1.15,
   fireCd: 0, bob: 0, sprint: false,
   dashCd: 0, dashT: 0, dashDir: new THREE.Vector3(),
   alive: true
@@ -1527,7 +1681,7 @@ function updatePlayer(dt){
   // 재장전 진행
   if (player.reloading){
     player.reloadT -= dt;
-    const k = 1 - player.reloadT/RELOAD_TIME;
+    const k = 1 - player.reloadT/player.reloadTime;
     document.getElementById('reloadArc').style.strokeDashoffset = String(100.5*(1-k));
     if (player.reloadT <= 0){
       player.reloading = false;
@@ -1560,47 +1714,222 @@ function damagePlayer(amount){
 }
 
 // ============================================================================
+//  무기 · 강화 · 코인
+// ============================================================================
+const WEAPONS = [
+  { id:'revolver', name:'리볼버',        emoji:'🔫', price:0,
+    desc:'기본 지급품. 한 발의 무게가 확실하다.',
+    dmg:1.00, mag:6,  fireCd:.16, reload:1.15, pellets:1, spread:0,    pierce:false,
+    recoil:.045, shake:.35, flash:28 },
+  { id:'smg',      name:'속사 기관단총',  emoji:'🧨', price:340,
+    desc:'탄창이 깊다. 기절한 틈에 쏟아붓기 좋다.',
+    dmg:0.42, mag:25, fireCd:.075, reload:1.5, pellets:1, spread:.012, pierce:false,
+    recoil:.022, shake:.18, flash:20 },
+  { id:'shotgun',  name:'이중 산탄총',    emoji:'💥', price:560,
+    desc:'8발이 한 번에. 가까울수록 흉악하다.',
+    dmg:0.34, mag:4,  fireCd:.55, reload:1.9, pellets:8, spread:.075, pierce:false,
+    recoil:.085, shake:.8,  flash:42 },
+  { id:'sniper',   name:'대물 저격총',    emoji:'🎯', price:980,
+    desc:'거인의 두개골을 관통한다. 머리만 노려라.',
+    dmg:3.00, mag:3,  fireCd:.95, reload:2.2, pellets:1, spread:0,    pierce:true,
+    recoil:.105, shake:1.1, flash:52 }
+];
+
+const UPGRADES = [
+  { id:'dmg',    name:'화력 강화',   max:5, cost:160, grow:1.70, step:'피해 +14%',        fmt:l=>`+${l*14}% 피해` },
+  { id:'mag',    name:'확장 탄창',   max:5, cost:130, grow:1.60, step:'탄창 +25%',        fmt:l=>`+${l*25}% 탄창` },
+  { id:'reload', name:'속사 장전',   max:4, cost:150, grow:1.65, step:'장전 시간 -12%',   fmt:l=>`장전 -${Math.round((1-Math.pow(.88,l))*100)}%` },
+  { id:'rate',   name:'경량 노리쇠', max:4, cost:190, grow:1.72, step:'연사 속도 +11%',   fmt:l=>`연사 +${Math.round((1/Math.pow(.90,l)-1)*100)}%` },
+  { id:'crit',   name:'철갑탄',      max:4, cost:220, grow:1.75, step:'헤드샷 피해 +18%', fmt:l=>`헤드샷 +${l*18}%` }
+];
+
+const SAVE_KEY = 'giantHunter3D.shop.v1';
+const shop = { coins:0, owned:['revolver'], equipped:'revolver', up:{}, maxStage:0, cleared:false };
+
+function loadShop(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (typeof d.coins === 'number') shop.coins = Math.max(0, d.coins);
+    if (Array.isArray(d.owned)) shop.owned = [...new Set(['revolver', ...d.owned.filter(id => WEAPONS.some(w=>w.id===id))])];
+    if (shop.owned.includes(d.equipped)) shop.equipped = d.equipped;
+    if (d.up) for (const u of UPGRADES) shop.up[u.id] = Math.min(u.max, Math.max(0, d.up[u.id]|0));
+    shop.maxStage = Math.min(STAGES.length-1, Math.max(0, d.maxStage|0));
+    shop.cleared  = !!d.cleared;
+  } catch(e){ /* 저장소를 못 쓰는 환경이면 그냥 새로 시작 */ }
+}
+function saveShop(){
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(shop)); } catch(e){}
+}
+loadShop();
+
+const upLv     = id => shop.up[id] | 0;
+const upCost   = u  => Math.round(u.cost * Math.pow(u.grow, upLv(u.id)) / 10) * 10;
+const weaponOf = id => WEAPONS.find(w => w.id === id) || WEAPONS[0];
+
+// 장착 무기 + 강화를 합친 실효 성능
+function stats(){
+  const w = weaponOf(shop.equipped);
+  return {
+    w,
+    dmgMul : w.dmg * (1 + .14*upLv('dmg')),
+    critMul: 1 + .18*upLv('crit'),
+    mag    : Math.max(1, Math.round(w.mag * (1 + .25*upLv('mag')))),
+    reload : w.reload * Math.pow(.88, upLv('reload')),
+    fireCd : w.fireCd * Math.pow(.90, upLv('rate')),
+    pellets: w.pellets, spread: w.spread, pierce: w.pierce
+  };
+}
+
+// ---- 코인 ----
+const COIN = { headshot:6, stage:[130, 210, 330, 500, 780] };
+
+function fmtCoin(n){ return n.toLocaleString('ko-KR'); }
+function updateCoinUI(){
+  const c = document.getElementById('coin');
+  if (c) c.innerHTML = `${fmtCoin(shop.coins)}<small> COIN</small>`;
+  const sc = document.getElementById('shopCoin');
+  if (sc) sc.textContent = fmtCoin(shop.coins) + ' 💰';
+  const st = document.getElementById('startCoin');
+  if (st) st.textContent = fmtCoin(shop.coins);
+}
+function addCoins(n){
+  if (n <= 0) return;
+  shop.coins += n;
+  saveShop();
+  updateCoinUI();
+  const c = document.getElementById('coin');
+  if (c){ c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+          setTimeout(()=>c.classList.remove('pop'), 130); }
+}
+function spendCoins(n){
+  if (shop.coins < n) return false;
+  shop.coins -= n; saveShop(); updateCoinUI(); return true;
+}
+
+// ============================================================================
 //  무기 (뷰모델)
 // ============================================================================
 const recoil = { pitch:0, roll:0, vp:0 };
-const RELOAD_TIME = 1.15;
-const FIRE_CD = 0.16;
+
+const GMAT = {
+  body : new THREE.MeshStandardMaterial({ color:0x23262c, roughness:.45, metalness:.85 }),
+  dark : new THREE.MeshStandardMaterial({ color:0x15171c, roughness:.35, metalness:.9  }),
+  grip : new THREE.MeshStandardMaterial({ color:0x39281c, roughness:.8,  metalness:.1  }),
+  gold : new THREE.MeshStandardMaterial({ color:0xc8a24a, roughness:.3,  metalness:1   }),
+  steel: new THREE.MeshStandardMaterial({ color:0x8d949f, roughness:.28, metalness:1   }),
+  glass: new THREE.MeshBasicMaterial({ color:0x7fe0ff, transparent:true, opacity:.55, fog:false })
+};
+
+// 무기별 뷰모델. 반환값의 mz 는 총구(머즐) 위치.
+function buildWeaponModel(id){
+  const g = new THREE.Group();
+  const box = (w,h,d,mat,x,y,z,rx,ry,rz) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(x,y,z); if(rx||ry||rz) m.rotation.set(rx||0,ry||0,rz||0); g.add(m); return m;
+  };
+  const cyl = (rt,rb,h,seg,mat,x,y,z,rx,ry,rz) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+    m.position.set(x,y,z); m.rotation.set(rx!==undefined?rx:Math.PI/2, ry||0, rz||0); g.add(m); return m;
+  };
+  let mz = [0,.03,-.9];
+
+  if (id === 'smg'){
+    box(.10,.14,.46, GMAT.dark, 0,0,-.06);                    // 기관부
+    cyl(.026,.028,.42,10, GMAT.body, 0,.03,-.42);             // 총열
+    box(.075,.055,.2, GMAT.steel, 0,.055,-.2);                // 상부 레일
+    box(.085,.26,.13, GMAT.dark, 0,-.21,-.02, .1,0,0);        // 탄창
+    box(.08,.28,.12, GMAT.grip, 0,-.17,.16, .3,0,0);          // 손잡이
+    box(.07,.1,.34, GMAT.dark, 0,-.02,.32);                   // 개머리판
+    box(.05,.1,.16, GMAT.body, 0,-.1,-.3, .35,0,0);           // 전방 손잡이
+    box(.018,.04,.018, GMAT.steel, 0,.095,-.6);               // 가늠쇠
+    mz = [0,.03,-.66];
+  } else if (id === 'shotgun'){
+    box(.15,.11,.4, GMAT.grip, 0,-.01,.06);                   // 목재 기관부
+    cyl(.036,.038,.86,12, GMAT.dark, -.042,.035,-.55);        // 총열 1
+    cyl(.036,.038,.86,12, GMAT.dark,  .042,.035,-.55);        // 총열 2
+    box(.16,.03,.5, GMAT.steel, 0,.08,-.42);                  // 총열 덮개
+    box(.13,.1,.3, GMAT.grip, 0,-.06,.3, .16,0,0);            // 개머리판
+    box(.1,.22,.12, GMAT.grip, 0,-.15,.1, .26,0,0);           // 손잡이
+    box(.12,.05,.22, GMAT.grip, 0,-.075,-.32);                // 전방 목재
+    box(.02,.04,.02, GMAT.gold, 0,.115,-.92);                 // 가늠쇠
+    mz = [0,.035,-1.0];
+  } else if (id === 'sniper'){
+    box(.10,.13,.62, GMAT.dark, 0,0,-.1);                     // 기관부
+    cyl(.028,.032,1.35,12, GMAT.body, 0,.03,-.92);            // 장총열
+    cyl(.048,.048,.2,12, GMAT.steel, 0,.03,-1.55);            // 소염기
+    cyl(.052,.052,.34,14, GMAT.dark, 0,.135,-.3);             // 스코프 본체
+    cyl(.062,.062,.06,14, GMAT.steel, 0,.135,-.48);           // 대물렌즈
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.05,14), GMAT.glass);
+    lens.position.set(0,.135,-.512); g.add(lens);
+    box(.03,.07,.03, GMAT.steel, 0,.085,-.18);                // 마운트
+    box(.03,.07,.03, GMAT.steel, 0,.085,-.42);
+    box(.085,.3,.13, GMAT.grip, 0,-.19,.14, .28,0,0);         // 손잡이
+    box(.09,.16,.42, GMAT.grip, 0,-.05,.36, -.06,0,0);        // 개머리판
+    box(.09,.05,.1, GMAT.grip, 0,-.13,.5);                    // 뺨받이
+    box(.075,.15,.1, GMAT.dark, 0,-.13,-.06);                 // 탄창
+    box(.02,.16,.02, GMAT.steel, -.05,-.12,-1.18, 0,0,.4);    // 양각대
+    box(.02,.16,.02, GMAT.steel,  .05,-.12,-1.18, 0,0,-.4);
+    mz = [0,.03,-1.7];
+  } else {                                                    // revolver
+    box(.11,.13,.42, GMAT.body, 0,0,-.05);
+    cyl(.032,.036,.75,12, GMAT.body, 0,.028,-.5);
+    cyl(.026,.026,.6,10, GMAT.gold, 0,-.045,-.44);
+    cyl(.07,.07,.2,12, GMAT.gold, 0,0,-.03);
+    box(.09,.3,.13, GMAT.grip, 0,-.19,.12, .28,0,0);
+    box(.085,.14,.3, GMAT.grip, 0,-.05,.28);
+    box(.02,.045,.02, GMAT.gold, 0,.09,-.82);
+    mz = [0,.03,-.9];
+  }
+
+  g.traverse(o => { if (o.isMesh){ o.castShadow = false; o.renderOrder = 5; } });
+  return { g, mz };
+}
 
 const gun = new THREE.Group();
-{
-  const body  = new THREE.MeshStandardMaterial({ color:0x23262c, roughness:.45, metalness:.85 });
-  const grip  = new THREE.MeshStandardMaterial({ color:0x39281c, roughness:.8,  metalness:.1 });
-  const gold  = new THREE.MeshStandardMaterial({ color:0xc8a24a, roughness:.3,  metalness:1 });
+gun.position.set(.26, -.22, -.52);
+gun.rotation.set(0, .06, 0);
+camera.add(gun);
 
-  const rec = new THREE.Mesh(new THREE.BoxGeometry(.11,.13,.42), body);
-  rec.position.set(0,0,-.05); gun.add(rec);
-  const bar = new THREE.Mesh(new THREE.CylinderGeometry(.032,.036,.75,12), body);
-  bar.rotation.x = Math.PI/2; bar.position.set(0,.028,-.5); gun.add(bar);
-  const und = new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.6,10), gold);
-  und.rotation.x = Math.PI/2; und.position.set(0,-.045,-.44); gun.add(und);
-  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.2,12), gold);
-  cyl.rotation.x = Math.PI/2; cyl.position.set(0,0,-.03); gun.add(cyl);
-  const gp = new THREE.Mesh(new THREE.BoxGeometry(.09,.3,.13), grip);
-  gp.position.set(0,-.19,.12); gp.rotation.x = .28; gun.add(gp);
-  const st = new THREE.Mesh(new THREE.BoxGeometry(.085,.14,.3), grip);
-  st.position.set(0,-.05,.28); gun.add(st);
-  const sight = new THREE.Mesh(new THREE.BoxGeometry(.02,.045,.02), gold);
-  sight.position.set(0,.09,-.82); gun.add(sight);
-
-  gun.traverse(o => { if(o.isMesh){ o.castShadow = false; o.renderOrder = 5; o.material.depthTest = true; } });
-
-  gun.position.set(.26, -.22, -.52);
-  gun.rotation.set(0, .06, 0);
-  camera.add(gun);
-}
-const muzzle = new THREE.Object3D(); muzzle.position.set(0,.03,-.9); gun.add(muzzle);
+const muzzle = new THREE.Object3D(); gun.add(muzzle);
 const muzzleLight = new THREE.PointLight(0xffb95e, 0, 16, 2);
 muzzle.add(muzzleLight);
 const muzzleFlash = new THREE.Mesh(
   new THREE.SphereGeometry(.11, 8, 6),
   new THREE.MeshBasicMaterial({ color:0xfff0b0, transparent:true, opacity:0, fog:false, blending:THREE.AdditiveBlending, depthWrite:false })
 );
-muzzleFlash.position.copy(muzzle.position); gun.add(muzzleFlash);
+gun.add(muzzleFlash);
+
+let gunModel = null;
+
+// 장착 무기를 화면과 플레이어 상태에 반영
+function applyLoadout(refill){
+  const st = stats();
+
+  if (!gunModel || gunModel.userData.wid !== st.w.id){
+    if (gunModel){
+      gun.remove(gunModel);
+      gunModel.traverse(o => o.geometry && o.geometry.dispose());
+    }
+    const built = buildWeaponModel(st.w.id);
+    gunModel = built.g;
+    gunModel.userData.wid = st.w.id;
+    gun.add(gunModel);
+    muzzle.position.set(built.mz[0], built.mz[1], built.mz[2]);
+    muzzleFlash.position.copy(muzzle.position);
+    muzzleFlash.scale.setScalar(st.w.pellets > 1 ? 1.5 : 1);
+  }
+
+  player.mag = st.mag;
+  player.reloadTime = st.reload;
+  if (refill) player.ammo = st.mag;
+  else player.ammo = Math.min(player.ammo, st.mag);
+
+  const n = document.getElementById('wpnName');
+  if (n) n.textContent = `${st.w.emoji} ${st.w.name}`;
+  updateAmmoUI();
+}
 
 const gunSway = { x:0, y:0, kick:0 };
 
@@ -1615,7 +1944,7 @@ function updateGun(dt){
 
   const sprintOff = player.sprint ? .11 : 0;
   const reloadOff = player.reloading ? .2 : 0;
-  const rp = player.reloading ? (1 - Math.abs(player.reloadT/RELOAD_TIME - .5)*2) : 0;
+  const rp = player.reloading ? (1 - Math.abs(player.reloadT/player.reloadTime - .5)*2) : 0;
 
   gun.position.x += (.26 + swayX + sprintOff*.4 - gunSway.kick*.02 - gun.position.x) * Math.min(1, dt*14);
   gun.position.y += (-.22 + swayY - reloadOff*rp - gunSway.kick*.03 - gun.position.y) * Math.min(1, dt*14);
@@ -1625,72 +1954,85 @@ function updateGun(dt){
 
   muzzleLight.intensity += (0 - muzzleLight.intensity) * Math.min(1, dt*26);
   muzzleFlash.material.opacity += (0 - muzzleFlash.material.opacity) * Math.min(1, dt*30);
-  muzzleFlash.scale.setScalar(1 + muzzleFlash.material.opacity*1.4);
 
   recoil.pitch += (0 - recoil.pitch) * Math.min(1, dt*9);
   recoil.roll  += (0 - recoil.roll)  * Math.min(1, dt*9);
 }
 
 const ray = new THREE.Raycaster();
-const _dir = new THREE.Vector3(), _origin = new THREE.Vector3();
+const _dir = new THREE.Vector3(), _baseDir = new THREE.Vector3(), _origin = new THREE.Vector3();
+const _muzzleW = new THREE.Vector3();
 
 function fire(){
   if (!game.running || game.modal || !player.alive) return;
   if (player.reloading || player.fireCd > 0) return;
   if (player.ammo <= 0){ startReload(); return; }
 
+  const st = stats();
   player.ammo--; updateAmmoUI();
-  player.fireCd = FIRE_CD;
+  player.fireCd = st.fireCd;
   Sfx.shot();
 
-  // 반동
+  // 조준선은 반동을 더하기 전에 확정한다 (총알은 조준점으로 나간다)
+  camera.getWorldPosition(_origin);
+  camera.getWorldDirection(_baseDir);
+  muzzle.getWorldPosition(_muzzleW);
+
+  // 반동은 발사 뒤 화면에만 적용
   gunSway.kick = 1;
-  recoil.pitch += 0.045 + Math.random()*0.02;
-  recoil.roll  += (Math.random()-.5)*0.03;
-  shake(.35);
-  muzzleLight.intensity = 28;
+  recoil.pitch += st.w.recoil * (.85 + Math.random()*.35);
+  recoil.roll  += (Math.random()-.5) * st.w.recoil * .7;
+  shake(st.w.shake);
+  muzzleLight.intensity = st.w.flash;
   muzzleFlash.material.opacity = 1;
 
-  camera.getWorldPosition(_origin);
-  camera.getWorldDirection(_dir);
-  // 이동 중 정확도 저하
+  // 이동 중 정확도 저하 + 무기 고유 산포
   const sp = Math.hypot(player.vel.x, player.vel.z);
-  const spread = Math.min(.028, sp*.0022) + (player.sprint?.018:0);
-  _dir.x += (Math.random()-.5)*spread;
-  _dir.y += (Math.random()-.5)*spread;
-  _dir.z += (Math.random()-.5)*spread;
-  _dir.normalize();
+  const spread = Math.min(.028, sp*.0022) + (player.sprint ? .018 : 0) + st.spread;
 
-  ray.set(_origin, _dir);
-  ray.far = 300;
+  game.shots++; game.sShots++;
+  let anyHit = false, anyCrit = false;
 
-  const muzzleWorld = new THREE.Vector3();
-  muzzle.getWorldPosition(muzzleWorld);
+  for (let n = 0; n < st.pellets; n++){
+    _dir.copy(_baseDir);
+    _dir.x += (Math.random()-.5)*spread;
+    _dir.y += (Math.random()-.5)*spread;
+    _dir.z += (Math.random()-.5)*spread;
+    _dir.normalize();
 
-  let hitPoint = _origin.clone().addScaledVector(_dir, 200);
-  let hitObj = null;
+    ray.set(_origin, _dir);
+    ray.far = 300;
 
-  if (giant.rig && !giant.dead){
-    const hits = ray.intersectObjects(giant.rig.hit, false);
-    if (hits.length){ hitObj = hits[0]; hitPoint = hits[0].point.clone(); }
+    let hitPoint = _origin.clone().addScaledVector(_dir, 200);
+    const hits = (giant.rig && !giant.dead) ? ray.intersectObjects(giant.rig.hit, false) : [];
+
+    if (hits.length){
+      hitPoint = hits[0].point.clone();
+      const take = st.pierce ? Math.min(2, hits.length) : 1;   // 관통은 뒤쪽 부위까지
+      for (let k = 0; k < take; k++){
+        const h = hits[k];
+        const part = h.object.userData.part;
+        const crit = part === 'head';
+        const base = crit ? DMG_HEAD * st.critMul : part === 'body' ? DMG_BODY : DMG_LIMB;
+        hitGiant(base * st.dmgMul * (k ? .7 : 1), crit, h.point, part);
+        anyHit = true;
+        if (crit) anyCrit = true;
+        if (giant.dead) break;
+      }
+    } else {
+      const gh = ray.intersectObject(ground, false);
+      if (gh.length) hitPoint = gh[0].point.clone();
+      burst(debris, hitPoint, st.pellets > 1 ? 3 : 8, 0x6b5f47, { spd:5, size:.2, life:.7, up:.7, spread:.5 });
+      burst(sparks, hitPoint, st.pellets > 1 ? 2 : 4, 0xffc07a, { spd:6, size:.18, life:.3, grav:-4, drag:3, spread:.7 });
+    }
+
+    tracer(_muzzleW, hitPoint);
+    if (giant.dead) break;
   }
-  if (!hitObj){
-    const gh = ray.intersectObject(ground, false);
-    if (gh.length) { hitPoint = gh[0].point.clone(); }
-  }
 
-  tracer(muzzleWorld, hitPoint);
-  game.shots++;
-
-  if (hitObj){
-    const part = hitObj.object.userData.part;
-    const crit = part === 'head';
-    const dmg  = crit ? DMG_HEAD : part === 'body' ? DMG_BODY : DMG_LIMB;
-    hitGiant(dmg, crit, hitPoint, part);
-  } else {
-    burst(debris, hitPoint, 8, 0x6b5f47, { spd:5, size:.2, life:.7, up:.7, spread:.5 });
-    burst(sparks, hitPoint, 4, 0xffc07a, { spd:6, size:.18, life:.3, grav:-4, drag:3, spread:.7 });
-  }
+  // 산탄이어도 한 번의 사격은 한 발로 집계한다
+  if (anyHit){ game.hits++; game.sHits++; }
+  if (anyCrit){ game.crits++; game.sCrits++; addCoins(COIN.headshot); }
 
   if (player.ammo === 0) setTimeout(startReload, 180);
   crossSpread();
@@ -1699,7 +2041,8 @@ function fire(){
 function startReload(){
   if (player.reloading || player.ammo === player.mag || !player.alive || !game.running) return;
   player.reloading = true;
-  player.reloadT = RELOAD_TIME;
+  player.reloadTime = stats().reload;
+  player.reloadT = player.reloadTime;
   Sfx.reload();
   document.getElementById('reloadRing').classList.add('show');
   document.getElementById('reloadHint').classList.remove('show');
@@ -1711,8 +2054,6 @@ function startReload(){
 function hitGiant(dmg, crit, point, part){
   giant.hp = Math.max(0, giant.hp - dmg);
   giant.flash = 0.12;
-  game.hits++;
-  if (crit) game.crits++;
 
   Sfx.hit(crit);
   hitmarker(crit);
@@ -1735,8 +2076,21 @@ function hitGiant(dmg, crit, point, part){
   if (giant.hp <= 0 && !giant.dead) killGiant();
 }
 
+// 스테이지 처치 보상 내역
+function stageReward(){
+  const base = COIN.stage[game.stage] || 200;
+  const hp   = Math.round(player.hp * 1.4);
+  const acc  = game.sShots ? game.sHits/game.sShots : 0;
+  const accB = acc >= .75 ? 180 : acc >= .55 ? 90 : 0;
+  const flaw = player.hp >= player.maxHp ? 250 : 0;
+  return { base, hp, accB, flaw, acc, total: base + hp + accB + flaw };
+}
+
 function killGiant(){
   giant.dead = true; giant.deathT = 0;
+  game.reward = stageReward();
+  addCoins(game.reward.total);
+  Sfx.coin();
   Sfx.roar(.7);
   setTimeout(()=>Sfx.win(), 700);
   shake(2.4);
@@ -1874,7 +2228,8 @@ function updateGiantPointer(){
 // ============================================================================
 //  게임 흐름
 // ============================================================================
-const game = { running:false, modal:false, stage:0, shots:0, hits:0, crits:0, t0:0, elapsed:0, allClear:false };
+const game = { running:false, modal:false, stage:0, shots:0, hits:0, crits:0,
+               sShots:0, sHits:0, sCrits:0, reward:null, t0:0, elapsed:0, allClear:false };
 
 function loadStage(i){
   const cfg = STAGES[i];
@@ -1882,7 +2237,6 @@ function loadStage(i){
   spawnGiant(cfg);
 
   player.hp = Math.min(player.maxHp, player.hp + cfg.heal);
-  player.ammo = player.mag;
   player.reloading = false;
   player.pos.set(0, 0, 13);
   player.vel.set(0,0,0);
@@ -1890,6 +2244,11 @@ function loadStage(i){
   player.alive = true;
   rocks.forEach(r => { scene.remove(r.m); scene.remove(r.warn); });
   rocks.length = 0;
+
+  game.sShots = game.sHits = game.sCrits = 0;
+  game.reward = null;
+  applyLoadout(true);
+  updateCoinUI();
 
   el('stageTitle').textContent = `STAGE ${i+1} / ${STAGES.length}`;
   el('bossName').textContent = cfg.name;
@@ -1923,19 +2282,41 @@ function openModal(title, color, sub, btnText){
   el('modal').classList.add('on');
 }
 
+function rewardHTML(){
+  const r = game.reward;
+  if (!r) return '';
+  const row = (label, v) => v > 0
+    ? `<div style="display:flex;justify-content:space-between;gap:26px"><span style="opacity:.7">${label}</span><b style="color:var(--gold)">+${fmtCoin(v)}</b></div>`
+    : '';
+  return `<div style="margin:18px auto 0;max-width:300px;font-size:13px;line-height:1.9;text-align:left">
+      ${row('처치 보상', r.base)}
+      ${row('생존 체력', r.hp)}
+      ${row(`이번 단계 명중률 ${Math.round(r.acc*100)}%`, r.accB)}
+      ${row('무피해 격파', r.flaw)}
+      <div style="display:flex;justify-content:space-between;gap:26px;margin-top:7px;padding-top:7px;
+                  border-top:1px solid rgba(255,255,255,.16);font-size:16px">
+        <span>획득 코인</span><b style="color:var(--gold)">+${fmtCoin(r.total)} 💰</b></div>
+    </div>`;
+}
+
 function stageCleared(){
   if (!game.running) return;
   const last = game.stage === STAGES.length-1;
+  shop.maxStage = Math.max(shop.maxStage, Math.min(STAGES.length-1, game.stage + 1));
+  if (last) shop.cleared = true;
+  saveShop();
+  updateStartUI();
+
   if (last){
     game.allClear = true;
     game.running = false;
     openModal('🏆 ALL CLEAR', '#ffd45e',
-      `거인왕까지 모두 쓰러뜨렸습니다.<br>남은 체력 <b>${Math.ceil(player.hp)}</b>`,
+      `거인왕까지 모두 쓰러뜨렸습니다.${rewardHTML()}`,
       '처음부터 다시');
   } else {
     game.running = false;
     openModal(`STAGE ${game.stage+1} CLEAR`, '#8affa0',
-      `<b>${STAGES[game.stage].name}</b> 격파!<br>다음 스테이지에서 체력 +${STAGES[game.stage+1].heal} 회복`,
+      `<b>${STAGES[game.stage].name}</b> 격파! · 다음 판 체력 +${STAGES[game.stage+1].heal}${rewardHTML()}`,
       '다음 단계로');
   }
 }
@@ -1947,8 +2328,9 @@ function loseGame(){
   Sfx.lose();
   flash(.3);
   openModal('💀 사냥 실패', '#ff5545',
-    `STAGE ${game.stage+1} · <b>${STAGES[game.stage].name}</b>에게 쓰러졌습니다.`,
-    '처음부터 다시');
+    `STAGE ${game.stage+1} · <b>${STAGES[game.stage].name}</b>에게 쓰러졌습니다.<br>` +
+    `모아둔 <b style="color:var(--gold)">${fmtCoin(shop.coins)} 💰</b> 는 그대로 남습니다 — 상점에서 강화하고 다시 도전하세요.`,
+    `STAGE ${game.stage+1} 재도전`);
 }
 
 function showPause(){
@@ -1958,14 +2340,137 @@ function showPause(){
   game._pauseResume = true;
 }
 
-function fullReset(){
+function fullReset(from){
+  const start = Math.max(0, Math.min(STAGES.length-1, from|0));
   player.hp = player.maxHp;
   game.shots = game.hits = game.crits = 0;
   game.elapsed = 0;
   game.allClear = false;
-  loadStage(0);
+  loadStage(start);
   game.running = true;
 }
+
+// 시작 화면의 진행 상황 표시
+function updateStartUI(){
+  const pr = document.getElementById('startProgress');
+  const nb = document.getElementById('btnNew');
+  const cta = document.getElementById('startCta');
+  if (!pr) return;
+  if (shop.maxStage > 0){
+    pr.innerHTML = shop.cleared
+      ? `🏆 전 단계 클리어 · 해금된 단계 <b>STAGE ${shop.maxStage+1}</b>`
+      : `이어서 <b>STAGE ${shop.maxStage+1}</b> · ${STAGES[shop.maxStage].name}`;
+    if (nb) nb.hidden = false;
+    if (cta) cta.textContent = `화면을 눌러 STAGE ${shop.maxStage+1} 부터 시작`;
+  } else {
+    pr.innerHTML = '';
+    if (nb) nb.hidden = true;
+    if (cta) cta.textContent = '화면을 눌러 사냥 시작';
+  }
+}
+
+// ============================================================================
+//  상점
+// ============================================================================
+let shopOpen = false;
+
+function statBars(w){
+  const norm = [
+    ['화력', Math.min(1, w.dmg * w.pellets / 3.2)],
+    ['연사', Math.min(1, (1/w.fireCd) / 14)],
+    ['탄창', Math.min(1, w.mag / 25)],
+    ['장전', Math.min(1, Math.max(.05, (2.45 - w.reload) / 2.0))]
+  ];
+  return norm.map(([k,v]) =>
+    `<div class="wrow"><span>${k}</span><div class="wbar"><i style="width:${Math.round(v*100)}%"></i></div></div>`
+  ).join('');
+}
+
+function renderShop(){
+  updateCoinUI();
+
+  el('wList').innerHTML = WEAPONS.map(w => {
+    const owned = shop.owned.includes(w.id);
+    const cur   = shop.equipped === w.id;
+    const can   = shop.coins >= w.price;
+    let btn;
+    if (cur)        btn = `<button class="wact cur" disabled>장착 중</button>`;
+    else if (owned) btn = `<button class="wact own" data-equip="${w.id}">장착하기</button>`;
+    else if (can)   btn = `<button class="wact" data-buy="${w.id}">${fmtCoin(w.price)} 💰 구매</button>`;
+    else            btn = `<button class="wact no" disabled>${fmtCoin(w.price)} 💰 부족</button>`;
+    return `<div class="wcard ${cur?'equipped':''} ${owned?'':'locked'}">
+        <div class="wtop"><span class="wemoji">${w.emoji}</span>
+          <div><h4>${w.name}</h4><p class="wdesc">${w.desc}</p></div></div>
+        <div class="wstats">${statBars(w)}</div>
+        ${w.pellets>1 ? '<div class="wrow" style="color:#ffb066">산탄 '+w.pellets+'발 동시 발사</div>' : ''}
+        ${w.pierce ? '<div class="wrow" style="color:#7fe0ff">관통 — 뒤쪽 부위까지 피해</div>' : ''}
+        ${btn}
+      </div>`;
+  }).join('');
+
+  el('uList').innerHTML = UPGRADES.map(u => {
+    const lv = upLv(u.id), maxed = lv >= u.max, cost = upCost(u);
+    const can = shop.coins >= cost;
+    const pips = Array.from({length:u.max}, (_,i) => `<i class="${i<lv?'on':''}"></i>`).join('');
+    const btn = maxed ? `<button class="ubuy max" disabled>MAX</button>`
+              : can   ? `<button class="ubuy" data-up="${u.id}">${fmtCoin(cost)} 💰</button>`
+                      : `<button class="ubuy no" disabled>${fmtCoin(cost)} 💰</button>`;
+    return `<div class="ucard">
+        <div class="uinfo"><h4>${u.name} <span style="color:#7f92b5;font-weight:600">Lv ${lv}/${u.max}</span></h4>
+          <p>${lv ? u.fmt(lv) + ' 적용 중 · ' : ''}다음: ${u.step}</p>
+          <div class="upips">${pips}</div></div>
+        ${btn}
+      </div>`;
+  }).join('');
+}
+
+function openShop(){
+  Sfx.init();
+  shopOpen = true;
+  document.exitPointerLock();
+  renderShop();
+  el('shop').classList.add('on');
+}
+function closeShop(){
+  shopOpen = false;
+  el('shop').classList.remove('on');
+  applyLoadout(!game.running);
+}
+
+el('shop').addEventListener('click', e => {
+  const t = e.target.closest('[data-buy],[data-equip],[data-up]');
+  if (!t) return;
+
+  if (t.dataset.buy){
+    const w = weaponOf(t.dataset.buy);
+    if (shop.owned.includes(w.id) || !spendCoins(w.price)) return;
+    shop.owned.push(w.id);
+    shop.equipped = w.id;
+    saveShop(); Sfx.buy(); renderShop(); applyLoadout(!game.running);
+  } else if (t.dataset.equip){
+    if (!shop.owned.includes(t.dataset.equip)) return;
+    shop.equipped = t.dataset.equip;
+    saveShop(); Sfx.buy(); renderShop(); applyLoadout(!game.running);
+  } else if (t.dataset.up){
+    const u = UPGRADES.find(x => x.id === t.dataset.up);
+    if (!u || upLv(u.id) >= u.max || !spendCoins(upCost(u))) return;
+    shop.up[u.id] = upLv(u.id) + 1;
+    saveShop(); Sfx.buy(); renderShop(); applyLoadout(!game.running);
+  }
+});
+
+el('shopClose').addEventListener('click', closeShop);
+el('btnShop').addEventListener('click', e => { e.preventDefault(); openShop(); });
+el('startShop').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openShop(); });
+el('shopReset').addEventListener('click', () => {
+  if (!confirm('코인과 구매한 무기·강화를 모두 지웁니다. 계속할까요?')) return;
+  shop.coins = 0; shop.owned = ['revolver']; shop.equipped = 'revolver'; shop.up = {};
+  shop.maxStage = 0; shop.cleared = false;
+  saveShop(); renderShop(); applyLoadout(!game.running); updateStartUI();
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && shopOpen) closeShop();
+});
 
 el('btn').addEventListener('click', () => {
   Sfx.init();
@@ -1976,8 +2481,10 @@ el('btn').addEventListener('click', () => {
     requestLock();
     return;
   }
-  if (game.allClear || !player.alive){
-    fullReset();
+  if (game.allClear){
+    fullReset(0);
+  } else if (!player.alive){
+    fullReset(game.stage);
   } else {
     loadStage(game.stage+1);
     game.running = true;
@@ -1986,18 +2493,22 @@ el('btn').addEventListener('click', () => {
 });
 
 // 시작
-if (IS_TOUCH){
-  el('keysDesktop').style.display = 'none';
-  el('keysTouch').style.display = 'flex';
-}
+setControlHints();
 el('loading').textContent = hasPost ? '준비 완료 · 블룸 활성화' : '준비 완료';
-el('start').addEventListener('click', () => {
+function startGame(from){
   Sfx.init();
   el('start').style.display = 'none';
-  fullReset();
+  fullReset(from);
   game.t0 = performance.now();
   requestLock();
+}
+el('start').addEventListener('click', () => startGame(shop.maxStage));
+el('btnNew').addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation();
+  shop.maxStage = 0; shop.cleared = false; saveShop(); updateStartUI();
+  startGame(0);
 });
+updateStartUI();
 
 // ============================================================================
 //  메인 루프
@@ -2053,6 +2564,10 @@ function animate(){
 
   if (composer) composer.render(); else renderer.render(scene, camera);
 }
+
+// 저장된 장비와 코인을 화면에 반영
+applyLoadout(true);
+updateCoinUI();
 
 // 시작 화면 배경용으로 미리 한 스테이지 배치
 spawnGiant(STAGES[0]);
