@@ -1727,11 +1727,11 @@ const WEAPONS = [
     recoil:.022, shake:.18, flash:20 },
   { id:'shotgun',  name:'이중 산탄총',    emoji:'💥', price:560,
     desc:'8발이 한 번에. 가까울수록 흉악하다.',
-    dmg:0.34, mag:4,  fireCd:.55, reload:1.9, pellets:8, spread:.075, pierce:false,
+    dmg:0.34, mag:4,  fireCd:.34, reload:1.7, pellets:8, spread:.075, pierce:false,
     recoil:.085, shake:.8,  flash:42 },
   { id:'sniper',   name:'대물 저격총',    emoji:'🎯', price:980,
     desc:'거인의 두개골을 관통한다. 머리만 노려라.',
-    dmg:3.00, mag:3,  fireCd:.95, reload:2.2, pellets:1, spread:0,    pierce:true,
+    dmg:3.00, mag:3,  fireCd:.55, reload:2.0, pellets:1, spread:0,    pierce:true,
     recoil:.105, shake:1.1, flash:52 }
 ];
 
@@ -2377,7 +2377,7 @@ let shopOpen = false;
 function statBars(w){
   const norm = [
     ['화력', Math.min(1, w.dmg * w.pellets / 3.2)],
-    ['연사', Math.min(1, (1/w.fireCd) / 14)],
+    ['연사', Math.min(1, Math.sqrt((1/w.fireCd) / 14))],
     ['탄창', Math.min(1, w.mag / 25)],
     ['장전', Math.min(1, Math.max(.05, (2.45 - w.reload) / 2.0))]
   ];
