@@ -114,7 +114,7 @@
   .key{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:8px;
     padding:12px 18px;font-size:13px;color:#c3d0e6;min-width:112px;text-align:center;}
   .key b{display:block;font-size:16px;color:#fff;margin-bottom:4px;letter-spacing:1px;}
-  #startCta{margin-top:46px;font-size:19px;font-weight:800;letter-spacing:3px;color:var(--gold);
+  #startCta{margin-top:46px;padding:0 18px;text-align:center;font-size:19px;font-weight:800;letter-spacing:3px;color:var(--gold);
     animation:pulse 1.6s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
   @media (max-width: 620px), (max-height: 620px){
@@ -200,6 +200,34 @@
     color:#ffe6a8;background:rgba(255,200,90,.14);border:1px solid rgba(255,200,90,.45);
     border-radius:6px;font-family:inherit;transition:transform .12s,background .12s;}
   #btnShop:hover{transform:translateY(-2px);background:rgba(255,200,90,.24);}
+  #stageSel{display:flex;gap:9px;margin-top:24px;flex-wrap:wrap;justify-content:center;max-width:640px;}
+  #stageSel[hidden]{display:none;}
+  .ssBtn{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:98px;
+    padding:11px 13px;border-radius:10px;font-family:inherit;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:#c3d0e6;
+    transition:transform .1s,background .1s,border-color .1s;}
+  .ssBtn b{font-size:15px;color:#fff;letter-spacing:1px;font-weight:800;}
+  .ssBtn span{font-size:11px;opacity:.72;white-space:nowrap;}
+  .ssBtn:hover:not(:disabled){transform:translateY(-2px);
+    background:rgba(255,200,90,.14);border-color:rgba(255,200,90,.5);}
+  .ssBtn.next{border-color:rgba(255,212,94,.72);background:rgba(255,200,80,.11);}
+  .ssBtn.next b{color:var(--gold);}
+  .ssBtn:disabled{opacity:.32;cursor:not-allowed;}
+
+  #btnStages{padding:15px 28px;font-size:17px;font-weight:800;letter-spacing:1px;cursor:pointer;
+    color:#cfe0ff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+    border-radius:6px;font-family:inherit;transition:transform .12s,background .12s;}
+  #btnStages:hover{transform:translateY(-2px);background:rgba(255,255,255,.14);}
+  #btnStages[hidden]{display:none;}
+
+  @media (max-width: 620px){
+    #stageSel{gap:6px;max-width:94vw;}
+    .ssBtn{min-width:0;flex:1 1 28%;padding:9px 6px;}
+    .ssBtn b{font-size:13px;}
+    .ssBtn span{font-size:10px;}
+    #btnStages{padding:13px 20px;font-size:15px;}
+  }
+
   #startBtns{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;justify-content:center;}
   #startShop,#btnNew{padding:12px 26px;font-size:15px;font-weight:800;letter-spacing:2px;
     cursor:pointer;color:#ffe6a8;background:rgba(255,200,90,.12);
@@ -364,6 +392,7 @@
       <div><b id="sTime">0:00</b><span>시간</span></div>
     </div>
     <div class="mBtns">
+      <button id="btnStages" hidden>단계 선택</button>
       <button id="btnShop">🛒 상점</button>
       <button id="btn">다음 단계</button>
     </div>
@@ -391,6 +420,7 @@
     <div class="key"><b>가로 화면</b>추천</div>
   </div>
   <div id="startProgress"></div>
+  <div id="stageSel" hidden></div>
   <div id="startBtns">
     <button id="startShop">🛒 상점 · 보유 <b id="startCoin">0</b> 💰</button>
     <button id="btnNew" hidden>처음부터</button>
@@ -2304,6 +2334,7 @@ function openModal(title, color, sub, btnText){
   el('mTitle').style.color = color;
   el('mSub').innerHTML = sub;
   el('btn').textContent = btnText;
+  el('btnStages').hidden = shop.maxStage <= 0;
   showStats();
   el('modal').classList.add('on');
 }
@@ -2378,16 +2409,29 @@ function fullReset(from){
 
 // 시작 화면의 진행 상황 표시
 function updateStartUI(){
-  const pr = document.getElementById('startProgress');
-  const nb = document.getElementById('btnNew');
+  const pr  = document.getElementById('startProgress');
+  const nb  = document.getElementById('btnNew');
   const cta = document.getElementById('startCta');
+  const sel = document.getElementById('stageSel');
   if (!pr) return;
+
+  // 해금된 단계는 아무거나 골라서 시작할 수 있다
+  if (sel){
+    sel.hidden = shop.maxStage <= 0;
+    sel.innerHTML = STAGES.map((st, i) => {
+      const open = i <= shop.maxStage;
+      const next = i === shop.maxStage;
+      return `<button class="ssBtn ${next?'next':''}" data-stage="${i}" ${open?'':'disabled'}>
+          <b>STAGE ${i+1}</b><span>${open ? st.name : '🔒 잠김'}</span></button>`;
+    }).join('');
+  }
+
   if (shop.maxStage > 0){
     pr.innerHTML = shop.cleared
-      ? `🏆 전 단계 클리어 · 해금된 단계 <b>STAGE ${shop.maxStage+1}</b>`
-      : `이어서 <b>STAGE ${shop.maxStage+1}</b> · ${STAGES[shop.maxStage].name}`;
+      ? `🏆 전 단계 클리어 · <b>STAGE 1~${STAGES.length}</b> 자유 선택`
+      : `<b>STAGE 1~${shop.maxStage+1}</b> 해금 · 원하는 단계를 고르세요`;
     if (nb) nb.hidden = false;
-    if (cta) cta.textContent = `화면을 눌러 STAGE ${shop.maxStage+1} 부터 시작`;
+    if (cta) cta.textContent = `화면을 누르면 STAGE ${shop.maxStage+1} 부터 시작`;
   } else {
     pr.innerHTML = '';
     if (nb) nb.hidden = true;
@@ -2529,6 +2573,25 @@ function startGame(from){
   requestLock();
 }
 el('start').addEventListener('click', () => startGame(shop.maxStage));
+
+// 단계 선택 버튼
+el('stageSel').addEventListener('click', e => {
+  const b = e.target.closest('.ssBtn');
+  if (!b || b.disabled) return;
+  e.preventDefault(); e.stopPropagation();
+  startGame(+b.dataset.stage);
+});
+
+// 진행 중/정산 화면에서 단계 선택으로 돌아간다
+el('btnStages').addEventListener('click', e => {
+  e.preventDefault();
+  game.modal = false; game.running = false;
+  game.paused = false; game._pauseResume = false;
+  document.exitPointerLock();
+  el('modal').classList.remove('on');
+  el('start').style.display = '';
+  updateStartUI();
+});
 el('btnNew').addEventListener('click', e => {
   e.preventDefault(); e.stopPropagation();
   shop.maxStage = 0; shop.cleared = false; saveShop(); updateStartUI();
