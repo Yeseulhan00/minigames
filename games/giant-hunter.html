@@ -412,7 +412,8 @@
     <div class="ugrid" id="uList"></div>
     <div id="shopFoot">
       <div id="shopHint">
-        코인은 거인을 쓰러뜨릴 때 가장 많이 들어옵니다. 헤드샷·명중률·남은 체력이 보너스로 붙습니다.<br>
+        머리를 맞힐 때마다 <b style="color:var(--gold)">+25 💰</b> 가 즉시 들어오고, 연속으로 맞히면 최대 3배까지 붙습니다.<br>
+        가장 큰 몫은 거인 처치 보상이며 명중률·남은 체력이 더해집니다.<br>
         구매 내역 · 코인 · 진행한 스테이지는 이 브라우저에 저장되어 다음 판에도 유지됩니다.
       </div>
       <button id="shopReset">진행 초기화</button>
@@ -1783,7 +1784,8 @@ function stats(){
 }
 
 // ---- 코인 ----
-const COIN = { headshot:6, stage:[130, 210, 330, 500, 780] };
+// 헤드샷은 연속으로 맞출수록 배수가 붙는다 (최대 3배)
+const COIN = { headshot:25, streakStep:.5, streakMax:3, stage:[130, 210, 330, 500, 780] };
 
 function fmtCoin(n){ return n.toLocaleString('ko-KR'); }
 function updateCoinUI(){
@@ -1961,7 +1963,7 @@ function updateGun(dt){
 
 const ray = new THREE.Raycaster();
 const _dir = new THREE.Vector3(), _baseDir = new THREE.Vector3(), _origin = new THREE.Vector3();
-const _muzzleW = new THREE.Vector3();
+const _muzzleW = new THREE.Vector3(), _critAt = new THREE.Vector3();
 
 function fire(){
   if (!game.running || game.modal || !player.alive) return;
@@ -2016,7 +2018,7 @@ function fire(){
         const base = crit ? DMG_HEAD * st.critMul : part === 'body' ? DMG_BODY : DMG_LIMB;
         hitGiant(base * st.dmgMul * (k ? .7 : 1), crit, h.point, part);
         anyHit = true;
-        if (crit) anyCrit = true;
+        if (crit && !anyCrit){ anyCrit = true; _critAt.copy(h.point); }
         if (giant.dead) break;
       }
     } else {
@@ -2032,7 +2034,17 @@ function fire(){
 
   // 산탄이어도 한 번의 사격은 한 발로 집계한다
   if (anyHit){ game.hits++; game.sHits++; }
-  if (anyCrit){ game.crits++; game.sCrits++; addCoins(COIN.headshot); }
+  if (anyCrit){
+    game.crits++; game.sCrits++;
+    game.hsStreak++;
+    const mult  = Math.min(COIN.streakMax, 1 + (game.hsStreak - 1) * COIN.streakStep);
+    const bonus = Math.round(COIN.headshot * mult);
+    addCoins(bonus);
+    coinPopup(_critAt, bonus, game.hsStreak);
+    Sfx.coin();
+  } else {
+    game.hsStreak = 0;   // 빗나가거나 몸통에 맞으면 연속 기록 초기화
+  }
 
   if (player.ammo === 0) setTimeout(startReload, 180);
   crossSpread();
@@ -2181,6 +2193,19 @@ function damageNumber(worldPos, value, crit){
   el('dmgTag').appendChild(d);
   dmgTags.push({ e:d, p:worldPos.clone(), t:0, dur:1.0, off:(Math.random()-.5)*0.9 });
 }
+// 헤드샷 보너스 코인 표시
+function coinPopup(worldPos, amount, streak){
+  const d = document.createElement('div');
+  d.innerHTML = `+${amount} 💰` +
+    (streak > 1 ? `<span style="display:block;font-size:13px;opacity:.85">${streak}연속 ×${(Math.min(COIN.streakMax, 1+(streak-1)*COIN.streakStep)).toFixed(1)}</span>` : '');
+  d.style.cssText = `position:absolute;font-weight:900;white-space:nowrap;text-align:center;
+    font-size:22px;color:#ffd45e;
+    text-shadow:0 0 14px rgba(255,190,50,.95),0 2px 6px #000;
+    transform:translate(-50%,-50%);pointer-events:none;`;
+  el('dmgTag').appendChild(d);
+  dmgTags.push({ e:d, p:worldPos.clone(), t:0, dur:1.25, off:.2, up:3.4, sx:84, sy:-14 });
+}
+
 const _proj = new THREE.Vector3();
 function updateDmgTags(dt){
   for (let i=dmgTags.length-1;i>=0;i--){
@@ -2188,12 +2213,12 @@ function updateDmgTags(dt){
     g.t += dt;
     if (g.t >= g.dur){ g.e.remove(); dmgTags.splice(i,1); continue; }
     const k = g.t/g.dur;
-    _proj.copy(g.p); _proj.y += k*1.6; _proj.x += g.off*k;
+    _proj.copy(g.p); _proj.y += k*(g.up || 1.6); _proj.x += g.off*k;
     _proj.project(camera);
     if (_proj.z > 1){ g.e.style.display='none'; continue; }
     g.e.style.display = 'block';
-    g.e.style.left = ((_proj.x*.5+.5)*innerWidth)+'px';
-    g.e.style.top  = ((-_proj.y*.5+.5)*innerHeight)+'px';
+    g.e.style.left = ((_proj.x*.5+.5)*innerWidth  + (g.sx||0))+'px';
+    g.e.style.top  = ((-_proj.y*.5+.5)*innerHeight + (g.sy||0))+'px';
     g.e.style.opacity = String(1 - Math.pow(k,2.2));
   }
 }
@@ -2229,7 +2254,7 @@ function updateGiantPointer(){
 //  게임 흐름
 // ============================================================================
 const game = { running:false, modal:false, stage:0, shots:0, hits:0, crits:0,
-               sShots:0, sHits:0, sCrits:0, reward:null, t0:0, elapsed:0, allClear:false };
+               sShots:0, sHits:0, sCrits:0, hsStreak:0, reward:null, t0:0, elapsed:0, allClear:false };
 
 function loadStage(i){
   const cfg = STAGES[i];
@@ -2246,13 +2271,14 @@ function loadStage(i){
   rocks.length = 0;
 
   game.sShots = game.sHits = game.sCrits = 0;
+  game.hsStreak = 0;
   game.reward = null;
   applyLoadout(true);
   updateCoinUI();
 
   el('stageTitle').textContent = `STAGE ${i+1} / ${STAGES.length}`;
   el('bossName').textContent = cfg.name;
-  el('bossSub').textContent = ['약점: 머리','머리를 노려 기절시켜라','투척이 빨라진다','돌진에 주의','최종 보스'][i];
+  el('bossSub').textContent = ['약점: 머리 · 헤드샷 +25 💰','머리를 노려 기절시켜라','투척이 빨라진다','돌진에 주의','최종 보스'][i];
   el('boss').classList.add('show');
   el('reloadRing').classList.remove('show');
   updateHpUI(); updateAmmoUI(); updateBossUI();
