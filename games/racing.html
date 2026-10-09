@@ -216,7 +216,7 @@
     <span class="kbd">Space</span> 드리프트 ·
     <span class="kbd">R</span> 코스 복귀 ·
     <span class="kbd">Tab</span> 순위표<br>
-    <span style="color:#6f7b98">모바일은 화면 버튼으로 조작합니다. 잔디로 나가면 크게 느려집니다.</span>
+    <span style="color:#6f7b98">모바일은 화면 버튼으로 조작합니다. 잔디로 나가도 속도는 그대로입니다.</span>
   </div>
 </div>
 
@@ -666,18 +666,15 @@ function stepCar(car, dt){
   const off = Math.abs(car.lat) > HALF_W + 0.4;
   car.offroad = off;
 
-  const power   = off ? car.power*0.58 : car.power;
-  const rollK   = off ? 1.15 : 0.26;
-  const dragQ   = off ? 0.0060 : 0.0035;
-  let   maxLat  = off ? 8.5 : car.maxLat;
+  let maxLat = car.maxLat;
   if(car.hand) maxLat *= 0.30;
 
-  vf += power*car.throttle*dt;
+  vf += car.power*car.throttle*dt;
   if(car.brake){
     if(vf > 0.4)      vf = Math.max(0, vf - 31*dt);
     else if(vf > -13) vf -= 11*dt;
   }
-  vf -= (rollK*vf + dragQ*vf*Math.abs(vf))*dt;
+  vf -= (0.26*vf + 0.0035*vf*Math.abs(vf))*dt;
 
   const auth = 1.78/(1+Math.abs(vf)*0.047);
   const eng  = clamp(Math.abs(vf)/3.0, 0, 1) * (vf<0?-1:1);
