@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>개미 대탈출 - 커지는 개미</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#2b3a1f; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; touch-action:none; }
+  #gameCanvas { display:block; background:#4a6b2a; }
+
+  #hud { position:fixed; top:0; left:0; right:0; padding:12px 16px; pointer-events:none; z-index:10; }
+  #sizeBox { display:inline-block; background:rgba(0,0,0,0.55); color:#fff; padding:8px 14px; border-radius:12px; font-size:14px; font-weight:bold; }
+  #sizeBox .stage { color:#ffe066; }
+  #barWrap { margin-top:6px; width:220px; height:10px; background:rgba(0,0,0,0.4); border-radius:6px; overflow:hidden; }
+  #barFill { height:100%; width:0%; background:linear-gradient(90deg,#7CFC00,#ffe066); transition:width 0.2s; }
+  #progressText { margin-top:4px; color:#fff; font-size:11px; background:rgba(0,0,0,0.4); display:inline-block; padding:3px 8px; border-radius:8px; }
+
+  #banner { position:fixed; top:38%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.75); color:#ffe066; font-size:22px; font-weight:bold; padding:16px 26px; border-radius:16px; text-align:center; z-index:20; opacity:0; pointer-events:none; transition:opacity 0.4s, transform 0.4s; }
+  #banner.show { opacity:1; transform:translate(-50%,-50%) scale(1.05); }
+
+  #startScreen, #overScreen { position:fixed; inset:0; background:rgba(10,15,5,0.92); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; z-index:30; padding:20px; }
+  #startScreen h1, #overScreen h1 { font-size:28px; color:#ffe066; margin-bottom:14px; }
+  #startScreen p, #overScreen p { font-size:14px; line-height:1.7; color:#e0e0e0; max-width:320px; margin-bottom:8px; }
+  .stepline { display:flex; align-items:center; gap:8px; margin:4px 0; font-size:13px; }
+  .stepdot { width:10px; height:10px; border-radius:50%; }
+  button.playBtn { margin-top:20px; padding:14px 36px; font-size:17px; font-weight:bold; background:#7CFC00; color:#1a2410; border:none; border-radius:30px; box-shadow:0 4px 0 #4d8f00; cursor:pointer; }
+  button.playBtn:active { transform:translateY(3px); box-shadow:0 1px 0 #4d8f00; }
+  #hidden { display:none; }
+
+  /* ---- 화면 확대/축소 ---- */
+  #zoomBox { position:fixed; right:14px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:15;
+             display:flex; flex-direction:column; gap:6px; align-items:stretch; }
+  #zoomBox button { width:48px; height:48px; border:none; border-radius:14px;
+             background:rgba(0,0,0,0.55); color:#fff; font-size:22px; font-weight:bold;
+             font-family:inherit; cursor:pointer; line-height:1; }
+  #zoomBox button:active { background:rgba(124,252,0,0.75); color:#1a2410; }
+  #zoomBox #zoomLevel { height:30px; font-size:12px; letter-spacing:0.5px; border-radius:10px; }
+
+  /* ---- 목록으로 ---- */
+  #homeLink { position:fixed; right:14px; top:14px; z-index:40;
+             background:rgba(0,0,0,0.55); color:#e0e0e0; text-decoration:none;
+             font-size:12px; padding:7px 12px; border-radius:10px; }
+  #homeLink:active { color:#7CFC00; }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<a id="homeLink" href="../index.html">&#8592; 목록으로</a>
+
+<div id="zoomBox">
+  <button id="zoomIn" aria-label="확대">+</button>
+  <button id="zoomLevel" aria-label="배율 되돌리기">100%</button>
+  <button id="zoomOut" aria-label="축소">&#8722;</button>
+</div>
+
+<div id="hud">
+  <div id="sizeBox">🐜 크기: <span id="sizeVal">10</span> &nbsp;|&nbsp; <span class="stage" id="stageVal">꼬마 개미</span></div>
+  <div id="barWrap"><div id="barFill"></div></div>
+  <div id="progressText" id="progressWrap">남은 건물: <span id="buildingsLeft">0</span></div>
+</div>
+
+<div id="banner"></div>
+
+<div id="startScreen">
+  <h1>🐜 개미 대탈출</h1>
+  <p>작은 개미가 먹이를 먹으며 점점 커지는 게임이에요.</p>
+  <div class="stepline"><div class="stepdot" style="background:#7CFC00"></div> 먹이를 먹고 성장하기</div>
+  <div class="stepline"><div class="stepdot" style="background:#ff8c42"></div> 사람보다 커지면 → 사람도 먹기!</div>
+  <div class="stepline"><div class="stepdot" style="background:#e34d4d"></div> 건물보다 커지면 → 건물도 먹기!</div>
+  <p style="margin-top:12px;">화면을 드래그(터치)하거나 방향키/WASD로 이동하세요.<br>작을 땐 사람과 건물을 피하세요!</p>
+  <button class="playBtn" id="startBtn">시작하기</button>
+</div>
+
+<div id="overScreen" class="hidden" style="display:none;">
+  <h1 id="overTitle">게임 오버</h1>
+  <p id="overDesc">개미가 너무 작아져서 사라졌어요...</p>
+  <p id="finalStats"></p>
+  <button class="playBtn" id="restartBtn">다시 시작</button>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ---------- World setup ----------
+  const WORLD_W = 3400, WORLD_H = 3400;
+
+  const HUMAN_THRESHOLD = 30;   // ant radius needed to eat humans
+  const K_MASS = 1;             // radius = sqrt(mass / K_MASS)
+
+  function radiusFromMass(m){ return Math.sqrt(m / K_MASS); }
+  function massFromRadius(r){ return r*r*K_MASS; }
+
+  let ant = { x: WORLD_W/2, y: WORLD_H/2, mass: massFromRadius(10), angle: 0, color:'#3b2b1a' };
+  let food=[], humans=[], buildings=[], particles=[];
+  let camX=0, camY=0;
+
+  // ---------- 화면 확대/축소 ----------
+  // 그리기는 전부 (월드좌표 - 카메라) 로 되어 있으므로, 캔버스에 배율 변환만
+  // 걸어주면 게임 로직은 손대지 않고 확대/축소가 된다.
+  // 화면 픽셀 = (월드 - 카메라) * zoom
+  const MIN_ZOOM = 0.3, MAX_ZOOM = 3;
+  let zoom = 1;
+
+  // 현재 배율에서 화면에 담기는 월드 크기
+  function viewW(){ return W / zoom; }
+  function viewH(){ return H / zoom; }
+
+  function setZoom(z){
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    document.getElementById('zoomLevel').textContent = Math.round(zoom*100) + '%';
+  }
+  let stageHumanShown=false, stageBuildingShown=false, victoryShown=false;
+  let gameRunning=false, gameOver=false;
+  let invincibleTimer=0;
+  let hitFlash=0;
+
+  const keys = {};
+  window.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; });
+  window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+
+  let pointerActive=false, pointerX=0, pointerY=0;
+  function setPointer(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    pointerX = clientX - rect.left;
+    pointerY = clientY - rect.top;
+  }
+  canvas.addEventListener('mousemove', e=>{ pointerActive=true; setPointer(e.clientX,e.clientY); });
+  canvas.addEventListener('mousedown', e=>{ pointerActive=true; setPointer(e.clientX,e.clientY); });
+  // 손가락 하나는 이동, 둘은 핀치 확대/축소
+  let pinchDist0 = 0, pinchZoom0 = 1;
+  function touchSpread(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
+
+  canvas.addEventListener('touchstart', e=>{
+    if(e.touches.length >= 2){
+      pointerActive = false;
+      pinchDist0 = touchSpread(e.touches);
+      pinchZoom0 = zoom;
+      return;
+    }
+    pointerActive = true;
+    setPointer(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive:true});
+
+  canvas.addEventListener('touchmove', e=>{
+    if(e.touches.length >= 2){
+      if(pinchDist0 > 0) setZoom(pinchZoom0 * touchSpread(e.touches) / pinchDist0);
+      return;
+    }
+    pointerActive = true;
+    setPointer(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive:true});
+
+  canvas.addEventListener('touchend', e=>{
+    if(e.touches.length < 2) pinchDist0 = 0;
+    if(e.touches.length === 0) pointerActive = false;
+  }, {passive:true});
+
+  // 마우스 휠
+  canvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1/1.15));
+  }, {passive:false});
+
+  // 버튼 / 키보드
+  document.getElementById('zoomIn').addEventListener('click', ()=> setZoom(zoom*1.25));
+  document.getElementById('zoomOut').addEventListener('click', ()=> setZoom(zoom/1.25));
+  document.getElementById('zoomLevel').addEventListener('click', ()=> setZoom(1));
+  window.addEventListener('keydown', e=>{
+    if(e.key === '+' || e.key === '=') setZoom(zoom*1.25);
+    else if(e.key === '-' || e.key === '_') setZoom(zoom/1.25);
+    else if(e.key === '0') setZoom(1);
+  });
+
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  function initWorld(){
+    ant = {
+      x: WORLD_W/2, y: WORLD_H/2,
+      mass: massFromRadius(10),
+      angle: 0,
+      color: '#3b2b1a'
+    };
+    food=[]; humans=[]; buildings=[]; particles=[];
+    stageHumanShown=false; stageBuildingShown=false; victoryShown=false;
+    invincibleTimer=1.5;
+    setZoom(1);   // 개미가 다시 작아지므로 배율도 기본으로
+
+    for(let i=0;i<140;i++) spawnFood();
+
+    // city grid of buildings with roads between
+    const cols=7, rows=7, cellW=WORLD_W/cols, cellH=WORLD_H/rows;
+    for(let cx=0; cx<cols; cx++){
+      for(let cy=0; cy<rows; cy++){
+        if(Math.random()<0.28) continue; // leave some empty plots/roads
+        const bw = rand(60,150), bh = rand(60,150);
+        const px = cx*cellW + rand(20, cellW-bw-20);
+        const py = cy*cellH + rand(20, cellH-bh-20);
+        const size = Math.max(bw,bh);
+        buildings.push({
+          x:px, y:py, w:bw, h:bh,
+          size:size,
+          req: size*0.85,
+          mass: size*size*0.9,
+          color: `hsl(${rand(190,230)}, 25%, ${rand(35,55)}%)`,
+          floors: Math.floor(bh/18)
+        });
+      }
+    }
+
+    for(let i=0;i<26;i++) spawnHuman();
+
+    updateBuildingsLeftUI();
+  }
+
+  function spawnFood(){
+    food.push({
+      x: rand(20, WORLD_W-20),
+      y: rand(20, WORLD_H-20),
+      r: rand(3,5),
+      color: `hsl(${rand(0,360)}, 70%, 60%)`
+    });
+  }
+
+  function spawnHuman(){
+    humans.push({
+      x: rand(40, WORLD_W-40),
+      y: rand(40, WORLD_H-40),
+      r: 11,
+      vx:0, vy:0,
+      dir: rand(0,Math.PI*2),
+      timer: rand(0,2),
+      skin: `hsl(${rand(20,40)},60%,65%)`,
+      shirt: `hsl(${rand(0,360)},55%,50%)`
+    });
+  }
+
+  function updateBuildingsLeftUI(){
+    document.getElementById('buildingsLeft').textContent = buildings.length;
+  }
+
+  // ---------- Update ----------
+  function antSpeed(){
+    const r = radiusFromMass(ant.mass);
+    return Math.max(60, 230 / (1 + r*0.045));
+  }
+
+  function updateAnt(dt){
+    let dx=0, dy=0;
+    if(keys['arrowup']||keys['w']) dy-=1;
+    if(keys['arrowdown']||keys['s']) dy+=1;
+    if(keys['arrowleft']||keys['a']) dx-=1;
+    if(keys['arrowright']||keys['d']) dx+=1;
+
+    let usingKeys = (dx!==0||dy!==0);
+    if(!usingKeys && pointerActive){
+      const cx = W/2, cy = H/2;
+      dx = pointerX - cx; dy = pointerY - cy;
+    }
+    const len = Math.hypot(dx,dy);
+    if(len > 4){
+      dx/=len; dy/=len;
+      const spd = antSpeed();
+      ant.x += dx*spd*dt;
+      ant.y += dy*spd*dt;
+      ant.angle = Math.atan2(dy,dx);
+    }
+    const r = radiusFromMass(ant.mass);
+    ant.x = Math.max(r, Math.min(WORLD_W-r, ant.x));
+    ant.y = Math.max(r, Math.min(WORLD_H-r, ant.y));
+  }
+
+  function circleRectCollide(cx,cy,cr, rx,ry,rw,rh){
+    const nx = Math.max(rx, Math.min(cx, rx+rw));
+    const ny = Math.max(ry, Math.min(cy, ry+rh));
+    const dx = cx-nx, dy = cy-ny;
+    return (dx*dx+dy*dy) < cr*cr;
+  }
+
+  function pushOutOfRect(cx,cy,cr, rx,ry,rw,rh){
+    // simple push: find nearest edge and push ant away
+    const nx = Math.max(rx, Math.min(cx, rx+rw));
+    const ny = Math.max(ry, Math.min(cy, ry+rh));
+    let dx = cx-nx, dy = cy-ny;
+    let dist = Math.hypot(dx,dy);
+    if(dist===0){ dx=1; dy=0; dist=1; }
+    const push = (cr - dist) + 1;
+    ant.x += (dx/dist)*push;
+    ant.y += (dy/dist)*push;
+  }
+
+  function showBanner(text, color){
+    const b = document.getElementById('banner');
+    b.textContent = text;
+    b.style.color = color || '#ffe066';
+    b.classList.add('show');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(()=> b.classList.remove('show'), 2200);
+  }
+
+  function spawnParticles(x,y,color,n){
+    for(let i=0;i<n;i++){
+      particles.push({x,y, vx:rand(-80,80), vy:rand(-80,80), life:0.6, color});
+    }
+  }
+
+  function updateParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt;
+      if(p.life<=0) particles.splice(i,1);
+    }
+  }
+
+  function eatMass(dm, x, y, color){
+    ant.mass += dm;
+    spawnParticles(x,y,color,8);
+  }
+
+  function checkStageTransitions(){
+    const r = radiusFromMass(ant.mass);
+    if(!stageHumanShown && r >= HUMAN_THRESHOLD){
+      stageHumanShown = true;
+      showBanner('🎉 사람보다 커졌어요! 이제 사람을 먹을 수 있어요!', '#ff8c42');
+    }
+    // building threshold varies per building; announce when bigger than smallest remaining building
+    if(!stageBuildingShown && buildings.length>0){
+      const minReq = Math.min(...buildings.map(b=>b.req));
+      if(r >= minReq){
+        stageBuildingShown = true;
+        showBanner('🏙️ 건물보다 커졌어요! 이제 건물을 먹어치울 수 있어요!', '#e34d4d');
+      }
+    }
+    if(!victoryShown && buildings.length===0 && stageBuildingShown){
+      victoryShown = true;
+      showBanner('👑 도시를 정복했습니다! 계속 자유롭게 돌아다녀 보세요!', '#7CFC00');
+    }
+  }
+
+  function updateFoodCollisions(){
+    const r = radiusFromMass(ant.mass);
+    for(let i=food.length-1;i>=0;i--){
+      const f = food[i];
+      const dist = Math.hypot(ant.x-f.x, ant.y-f.y);
+      if(dist < r + f.r){
+        eatMass(9, f.x, f.y, f.color);
+        food.splice(i,1);
+        spawnFood();
+      }
+    }
+  }
+
+  function updateHumans(dt){
+    const r = radiusFromMass(ant.mass);
+    const canEat = r >= HUMAN_THRESHOLD;
+    for(let i=humans.length-1;i>=0;i--){
+      const h = humans[i];
+      h.timer -= dt;
+      if(h.timer<=0){
+        h.dir += rand(-1,1);
+        h.timer = rand(0.8,2);
+      }
+      if(canEat){
+        // flee from ant
+        const dx = h.x-ant.x, dy = h.y-ant.y;
+        const d = Math.hypot(dx,dy);
+        if(d < 220){ h.dir = Math.atan2(dy,dx); }
+      }
+      h.x += Math.cos(h.dir)*22*dt;
+      h.y += Math.sin(h.dir)*22*dt;
+      h.x = Math.max(10, Math.min(WORLD_W-10, h.x));
+      h.y = Math.max(10, Math.min(WORLD_H-10, h.y));
+
+      const dist = Math.hypot(ant.x-h.x, ant.y-h.y);
+      if(dist < r + h.r){
+        if(canEat){
+          eatMass(140, h.x, h.y, h.shirt);
+          humans.splice(i,1);
+          setTimeout(spawnHuman, rand(2000,5000));
+        } else if(invincibleTimer<=0){
+          ant.mass = Math.max(massFromRadius(6), ant.mass - massFromRadius(6)*1.2);
+          invincibleTimer = 1.2;
+          hitFlash = 0.4;
+          const dx = ant.x-h.x, dy=ant.y-h.y, dd=Math.hypot(dx,dy)||1;
+          ant.x += (dx/dd)*30; ant.y += (dy/dd)*30;
+        }
+      }
+    }
+  }
+
+  function updateBuildings(){
+    const r = radiusFromMass(ant.mass);
+    for(let i=buildings.length-1;i>=0;i--){
+      const b = buildings[i];
+      const collide = circleRectCollide(ant.x,ant.y,r, b.x,b.y,b.w,b.h);
+      if(!collide) continue;
+      if(r >= b.req){
+        eatMass(b.mass, b.x+b.w/2, b.y+b.h/2, b.color);
+        buildings.splice(i,1);
+        updateBuildingsLeftUI();
+      } else {
+        pushOutOfRect(ant.x,ant.y,r, b.x,b.y,b.w,b.h);
+      }
+    }
+  }
+
+  function updateCamera(){
+    const vw = viewW(), vh = viewH();
+    // 축소해서 월드보다 화면이 넓어지면 가장자리에 붙이지 말고 가운데에 둔다
+    camX = (vw >= WORLD_W) ? (WORLD_W - vw)/2
+                           : Math.max(0, Math.min(WORLD_W - vw, ant.x - vw/2));
+    camY = (vh >= WORLD_H) ? (WORLD_H - vh)/2
+                           : Math.max(0, Math.min(WORLD_H - vh, ant.y - vh/2));
+  }
+
+  function updateHUD(){
+    const r = radiusFromMass(ant.mass);
+    document.getElementById('sizeVal').textContent = Math.round(r);
+    let stage = '꼬마 개미';
+    let pct = Math.min(100, (r/HUMAN_THRESHOLD)*100);
+    if(r >= HUMAN_THRESHOLD){
+      stage = '사람 포식자';
+      const minReq = buildings.length>0 ? Math.min(...buildings.map(b=>b.req)) : HUMAN_THRESHOLD*3;
+      pct = Math.min(100, (r/minReq)*100);
+    }
+    if(buildings.length===0 && stageBuildingShown){ stage='도시 정복자 👑'; pct=100; }
+    else if(stageBuildingShown){ stage='건물 포식자'; }
+    document.getElementById('stageVal').textContent = stage;
+    document.getElementById('barFill').style.width = pct+'%';
+  }
+
+  // ---------- Draw ----------
+  function drawBackground(){
+    const vw = viewW(), vh = viewH();
+    ctx.fillStyle = '#4a6b2a';
+    ctx.fillRect(0,0,vw,vh);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1/zoom;   // 축소해도 격자가 사라지지 않도록 화면 기준 1px 유지
+    const grid = 100;
+    const startX = -((camX) % grid);
+    const startY = -((camY) % grid);
+    for(let x=startX; x<vw; x+=grid){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,vh); ctx.stroke();
+    }
+    for(let y=startY; y<vh; y+=grid){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(vw,y); ctx.stroke();
+    }
+  }
+
+  function drawFood(){
+    for(const f of food){
+      const sx = f.x-camX, sy = f.y-camY;
+      if(sx<-20||sx>viewW()+20||sy<-20||sy>viewH()+20) continue;
+      ctx.beginPath();
+      ctx.fillStyle = f.color;
+      ctx.arc(sx,sy,f.r,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function drawBuildings(){
+    const r = radiusFromMass(ant.mass);
+    for(const b of buildings){
+      const sx = b.x-camX, sy=b.y-camY;
+      if(sx>viewW()+200||sx+b.w<-200||sy>viewH()+200||sy+b.h<-200) continue;
+      const eatable = r >= b.req;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(sx,sy,b.w,b.h);
+      ctx.strokeStyle = eatable ? 'rgba(227,77,77,0.8)' : 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = (eatable?3:1)/zoom;   // 테두리는 배율과 무관하게 보이도록
+      ctx.strokeRect(sx,sy,b.w,b.h);
+      // windows
+      ctx.fillStyle = 'rgba(255,240,180,0.55)';
+      const wCols = Math.max(1,Math.floor(b.w/20));
+      for(let fl=0; fl<b.floors; fl++){
+        for(let wc=0; wc<wCols; wc++){
+          if(Math.random()<0.02) continue;
+          const wx = sx + 6 + wc*(b.w-12)/wCols;
+          const wy = sy + 8 + fl*17;
+          if(wy > sy+b.h-10) continue;
+          ctx.fillRect(wx, wy, Math.max(3,(b.w-12)/wCols*0.5), 8);
+        }
+      }
+    }
+  }
+
+  function drawHumans(){
+    const r = radiusFromMass(ant.mass);
+    const canEat = r >= HUMAN_THRESHOLD;
+    for(const h of humans){
+      const sx = h.x-camX, sy = h.y-camY;
+      if(sx<-30||sx>viewW()+30||sy<-30||sy>viewH()+30) continue;
+      ctx.save();
+      ctx.translate(sx,sy);
+      // legs
+      ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-3,10); ctx.lineTo(-6,20); ctx.moveTo(3,10); ctx.lineTo(6,20); ctx.stroke();
+      // body
+      ctx.fillStyle = h.shirt;
+      ctx.fillRect(-6,-2,12,14);
+      // head
+      ctx.beginPath();
+      ctx.fillStyle = h.skin;
+      ctx.arc(0,-8,6,0,Math.PI*2);
+      ctx.fill();
+      if(canEat){
+        ctx.strokeStyle='rgba(255,140,66,0.9)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawAnt(){
+    const r = radiusFromMass(ant.mass);
+    const sx = ant.x-camX, sy = ant.y-camY;
+    ctx.save();
+    ctx.translate(sx,sy);
+    ctx.rotate(ant.angle);
+
+    if(hitFlash>0){
+      ctx.filter = 'none';
+      ctx.globalAlpha = 0.6 + 0.4*Math.sin(Date.now()/40);
+    }
+
+    // legs
+    ctx.strokeStyle = '#1a120a';
+    ctx.lineWidth = Math.max(1.5, r*0.08);
+    for(let i=-1;i<=1;i++){
+      ctx.beginPath();
+      ctx.moveTo(-r*0.1*i*2, -r*0.1);
+      ctx.lineTo(-r*0.1*i*2 - r*0.5, r*0.6*Math.sign(i||1));
+      ctx.stroke();
+    }
+
+    // abdomen
+    ctx.fillStyle = '#4a3218';
+    ctx.beginPath();
+    ctx.ellipse(-r*0.9, 0, r*0.75, r*0.55, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // thorax
+    ctx.beginPath();
+    ctx.ellipse(0,0, r*0.5, r*0.4, 0,0,Math.PI*2);
+    ctx.fill();
+
+    // head
+    ctx.beginPath();
+    ctx.fillStyle = '#3b2711';
+    ctx.ellipse(r*0.75,0, r*0.4, r*0.32, 0,0,Math.PI*2);
+    ctx.fill();
+
+    // antennae
+    ctx.strokeStyle = '#1a120a';
+    ctx.lineWidth = Math.max(1, r*0.05);
+    ctx.beginPath();
+    ctx.moveTo(r*1.0, -r*0.15); ctx.lineTo(r*1.5, -r*0.55);
+    ctx.moveTo(r*1.0, r*0.15); ctx.lineTo(r*1.5, r*0.55);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      const sx = p.x-camX, sy=p.y-camY;
+      ctx.globalAlpha = Math.max(0,p.life/0.6);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(sx,sy,3,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---------- Main loop ----------
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = Math.min(0.05, (now-lastTime)/1000);
+    lastTime = now;
+
+    if(gameRunning && !gameOver){
+      updateAnt(dt);
+      updateFoodCollisions();
+      updateHumans(dt);
+      updateBuildings();
+      updateParticles(dt);
+      updateCamera();
+      checkStageTransitions();
+      updateHUD();
+      if(invincibleTimer>0) invincibleTimer -= dt;
+      if(hitFlash>0) hitFlash -= dt;
+
+      const r = radiusFromMass(ant.mass);
+      if(r < 5){
+        endGame();
+      }
+    }
+
+    // 이 프레임의 배율을 걸어둔다. 이후 draw 함수들은 (월드 - 카메라) 좌표만 쓰면 된다.
+    ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
+    drawBackground();
+    drawFood();
+    drawBuildings();
+    drawHumans();
+    drawParticles();
+    if(gameRunning) drawAnt();
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function endGame(){
+    gameOver = true;
+    gameRunning = false;
+    const r = radiusFromMass(ant.mass);
+    document.getElementById('finalStats').textContent = `최종 크기: ${Math.round(Math.max(5,r))} · 먹은 건물: ${(28 - buildings.length) >= 0 ? '진행 중' : ''}`;
+    document.getElementById('overScreen').style.display = 'flex';
+  }
+
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    document.getElementById('startScreen').style.display = 'none';
+    initWorld();
+    gameRunning = true;
+    gameOver = false;
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    document.getElementById('overScreen').style.display = 'none';
+    initWorld();
+    gameRunning = true;
+    gameOver = false;
+  });
+
+})();
+</script>
+</body>
+</html>
