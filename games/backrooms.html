@@ -172,6 +172,14 @@
     #startScreen{ gap:8px; padding:14px; }
     #startScreen p.desc{ padding:8px 0; }
   }
+  /* 가로 모드: 높이가 귀하니 D패드를 오른쪽으로 빼고 미로에 세로 공간을 더 준다. */
+  @media (orientation:landscape) and (max-height:480px){
+    #touchControls{
+      bottom:auto; top:50%; left:auto;
+      right:calc(10px + env(safe-area-inset-right, 0px));
+      transform:translateY(-50%);
+    }
+  }
   .home{
     position:fixed; left:10px; z-index:60;
     bottom:calc(10px + env(safe-area-inset-bottom, 0px));
@@ -270,17 +278,21 @@
   }
 
   // ---------- responsive fit ----------
-  // 내부 해상도는 그대로 두고 CSS 크기만 줄여, 좁은 화면에서도 미로 전여가 보이게 한다.
+  // 내부 해상도는 그대로 두고 CSS 크기만 줄여, 좁은 화면에서도 미로 전체가 보이게 한다.
   function fitCanvas(){
-    const topBand = window.innerHeight < 480 ? 46 : 72;   // HUD + 경고 못지
-    const bottomBand = (isTouch ? touchControls.offsetHeight : 0) + 26;
-    const availW = Math.max(120, window.innerWidth - 20);
+    // 가로 모드에서는 D패드를 오른쪽으로 빼서 세로 공간을 미로에 더 준다.
+    const sideDpad = isTouch && window.innerHeight <= 480 && window.innerWidth > window.innerHeight;
+    const topBand = window.innerHeight < 480 ? 46 : 72;   // HUD + 경고 문구
+    const bottomBand = (isTouch && !sideDpad ? touchControls.offsetHeight : 0) + 26;
+    const rightBand = sideDpad ? touchControls.offsetWidth + 24 : 0;
+    const availW = Math.max(120, window.innerWidth - 20 - rightBand);
     const availH = Math.max(120, window.innerHeight - topBand - bottomBand);
     const scale = Math.min(availW/GAME_W, availH/GAME_H, 1);
     canvas.style.width  = Math.round(GAME_W*scale)+'px';
     canvas.style.height = Math.round(GAME_H*scale)+'px';
     app.style.paddingTop = topBand+'px';
     app.style.paddingBottom = bottomBand+'px';
+    app.style.paddingRight = rightBand+'px';
   }
   fitCanvas();
   window.addEventListener('resize', fitCanvas);
