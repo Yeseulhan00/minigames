@@ -157,6 +157,7 @@
     setZoom(zoom + (target - zoom) * Math.min(1, dt*3));
   }
   let stageHumanShown=false, stageBuildingShown=false, victoryShown=false;
+  let initialBuildings=0;   // '먹은 건물 N / M' 을 세기 위해 처음 수를 기억해 둔다
   let gameRunning=false, gameOver=false;
   let invincibleTimer=0;
   let hitFlash=0;
@@ -256,6 +257,8 @@
         });
       }
     }
+
+    initialBuildings = buildings.length;
 
     for(let i=0;i<26;i++) spawnHuman();
 
@@ -399,9 +402,10 @@
         showBanner('🏙️ 건물보다 커졌어요! 이제 건물을 먹어치울 수 있어요!', '#e34d4d');
       }
     }
-    if(!victoryShown && buildings.length===0 && stageBuildingShown){
+    // 마지막 건물까지 먹으면 축하 화면을 띄우고 게임을 끝낸다
+    if(!victoryShown && initialBuildings > 0 && buildings.length === 0){
       victoryShown = true;
-      showBanner('👑 도시를 정복했습니다! 계속 자유롭게 돌아다녀 보세요!', '#7CFC00');
+      endGame(true);
     }
   }
 
@@ -661,7 +665,7 @@
 
       const r = radiusFromMass(ant.mass);
       if(r < 5){
-        endGame();
+        endGame(false);
       }
     }
 
@@ -678,11 +682,24 @@
   }
   requestAnimationFrame(loop);
 
-  function endGame(){
+  function endGame(won){
     gameOver = true;
     gameRunning = false;
     const r = radiusFromMass(ant.mass);
-    document.getElementById('finalStats').textContent = `최종 크기: ${Math.round(Math.max(5,r))} · 먹은 건물: ${(28 - buildings.length) >= 0 ? '진행 중' : ''}`;
+    const eaten = initialBuildings - buildings.length;
+    const title = document.getElementById('overTitle');
+    const desc = document.getElementById('overDesc');
+    if(won){
+      title.textContent = '🎉 축하합니다! 도시를 정복했어요';
+      title.style.color = '#7CFC00';
+      desc.textContent = '건물을 하나도 남기지 않고 전부 먹어치웠습니다.';
+    } else {
+      title.textContent = '게임 오버';
+      title.style.color = '';
+      desc.textContent = '개미가 너무 작아져서 사라졌어요...';
+    }
+    document.getElementById('finalStats').textContent =
+      `최종 크기 ${Math.round(Math.max(5,r))} · 먹은 건물 ${eaten} / ${initialBuildings}`;
     document.getElementById('overScreen').style.display = 'flex';
   }
 
