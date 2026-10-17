@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>LEVEL 0 :: 이탈 기록</title>
 <style>
   :root{
@@ -15,10 +15,11 @@
     --text-dim:#a89b6a;
     --warn:#c2402f;
     --exit:#fff3ac;
+    --dpad:56px;
   }
   *{box-sizing:border-box;}
   html,body{
-    margin:0; padding:0; height:100%;
+    margin:0; padding:0; height:100%; height:100dvh;
     background:var(--bg);
     color:var(--text);
     font-family:'Courier New', Courier, monospace;
@@ -29,6 +30,7 @@
   #app{
     position:relative; width:100%; height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
+    overflow:hidden;
   }
 
   /* ---- scanline / vhs glitch overlay ---- */
@@ -55,6 +57,7 @@
     position:absolute; inset:0; z-index:40;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; gap:18px; padding:24px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
     background:radial-gradient(ellipse at center, #14110a 0%, #030200 80%);
   }
   #startScreen h1{
@@ -112,17 +115,25 @@
   canvas#game{
     display:block; image-rendering:pixelated;
     filter:contrast(1.05) saturate(0.85);
+    max-width:100%; max-height:100%;
+    touch-action:none;
   }
 
   /* ---- touch controls ---- */
   #touchControls{
-    position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:30;
-    display:grid; grid-template-columns:44px 44px 44px; grid-template-rows:44px 44px 44px;
-    gap:4px; opacity:0.85;
+    position:absolute; left:50%; z-index:30;
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    transform:translateX(-50%);
+    display:grid;
+    grid-template-columns:repeat(3, var(--dpad));
+    grid-template-rows:repeat(2, var(--dpad));
+    gap:6px; opacity:0.9;
   }
   #touchControls button{
-    font-family:inherit; font-size:16px; color:var(--text);
-    background:rgba(20,17,8,0.75); border:1px solid var(--text-dim);
+    font-family:inherit; font-size:20px; line-height:1; color:var(--text);
+    background:rgba(20,17,8,0.8); border:1px solid var(--text-dim);
+    border-radius:4px; -webkit-tap-highlight-color:transparent;
+    display:flex; align-items:center; justify-content:center;
   }
   #touchControls button:active{ background:rgba(90,80,40,0.85); }
   .tc-up{grid-column:2; grid-row:1;}
@@ -135,6 +146,7 @@
     position:absolute; inset:0; z-index:45; display:none;
     flex-direction:column; align-items:center; justify-content:center; gap:14px;
     text-align:center; padding:24px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
     background:rgba(2,1,0,0.92);
   }
   #endScreen h2{ font-size:clamp(22px,7vw,36px); letter-spacing:4px; margin:0; }
@@ -145,8 +157,24 @@
     position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
     font-size:9px; color:#5a5030; letter-spacing:1px; z-index:20;
   }
+  body.touch .footnote{ display:none; }
+
+  /* ---- small / short screens ---- */
+  @media (max-width:420px){
+    #hud{ padding:8px 10px; }
+    #sanityBarOuter{ width:84px; }
+    #startScreen{ gap:12px; padding:18px; }
+    #startScreen p.desc{ font-size:12px; line-height:1.6; padding:10px 0; }
+  }
+  @media (max-height:480px){
+    :root{ --dpad:44px; }
+    #touchControls{ bottom:calc(8px + env(safe-area-inset-bottom, 0px)); gap:4px; }
+    #startScreen{ gap:8px; padding:14px; }
+    #startScreen p.desc{ padding:8px 0; }
+  }
   .home{
-    position:fixed; left:10px; bottom:10px; z-index:60;
+    position:fixed; left:10px; z-index:60;
+    bottom:calc(10px + env(safe-area-inset-bottom, 0px));
     font-size:11px; letter-spacing:1px; text-decoration:none;
     color:var(--text-dim); background:rgba(4,3,0,0.7);
     border:1px solid #4a4020; padding:5px 10px;
@@ -220,8 +248,9 @@
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  canvas.width = COLS*CELL;
-  canvas.height = ROWS*CELL;
+  const GAME_W = COLS*CELL, GAME_H = ROWS*CELL;
+  canvas.width = GAME_W;
+  canvas.height = GAME_H;
 
   const startScreen = document.getElementById('startScreen');
   const endScreen = document.getElementById('endScreen');
@@ -232,8 +261,30 @@
   const warningText = document.getElementById('warningText');
   const crt = document.getElementById('crt');
 
+  const app = document.getElementById('app');
+
   let isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-  if(isTouch) touchControls.style.display = 'grid';
+  if(isTouch){
+    document.body.classList.add('touch');
+    touchControls.style.display = 'grid';
+  }
+
+  // ---------- responsive fit ----------
+  // 내부 해상도는 그대로 두고 CSS 크기만 줄여, 좁은 화면에서도 미로 전여가 보이게 한다.
+  function fitCanvas(){
+    const topBand = window.innerHeight < 480 ? 46 : 72;   // HUD + 경고 못지
+    const bottomBand = (isTouch ? touchControls.offsetHeight : 0) + 26;
+    const availW = Math.max(120, window.innerWidth - 20);
+    const availH = Math.max(120, window.innerHeight - topBand - bottomBand);
+    const scale = Math.min(availW/GAME_W, availH/GAME_H, 1);
+    canvas.style.width  = Math.round(GAME_W*scale)+'px';
+    canvas.style.height = Math.round(GAME_H*scale)+'px';
+    app.style.paddingTop = topBand+'px';
+    app.style.paddingBottom = bottomBand+'px';
+  }
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
+  window.addEventListener('orientationchange', ()=> setTimeout(fitCanvas, 150));
 
   // ---------- maze generation ----------
   function makeGrid(){
@@ -467,6 +518,23 @@
     }, {passive:false});
     btn.addEventListener('click', ()=> tryMove(btn.dataset.dir));
   });
+
+  // 캐노비스 스와이프로도 이동 (모바일)
+  if(isTouch){
+    let sx=0, sy=0, st=0;
+    canvas.addEventListener('touchstart', (e)=>{
+      const t = e.changedTouches[0];
+      sx = t.clientX; sy = t.clientY; st = Date.now();
+    }, {passive:true});
+    canvas.addEventListener('touchend', (e)=>{
+      if(Date.now()-st > 700) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX-sx, dy = t.clientY-sy;
+      if(Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      if(Math.abs(dx) > Math.abs(dy)) tryMove(dx>0 ? 'E' : 'W');
+      else tryMove(dy>0 ? 'S' : 'N');
+    }, {passive:true});
+  }
 
   function tryMove(dir){
     if(!gameActive || player.moving) return;
