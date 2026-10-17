@@ -36,6 +36,8 @@
              font-family:inherit; cursor:pointer; line-height:1; }
   #zoomBox button:active { background:rgba(124,252,0,0.75); color:#1a2410; }
   #zoomBox #zoomLevel { height:30px; font-size:12px; letter-spacing:0.5px; border-radius:10px; }
+  #zoomBox #zoomAuto { height:34px; font-size:11px; font-weight:bold; letter-spacing:1px; border-radius:10px; }
+  #zoomBox #zoomAuto.on { background:rgba(124,252,0,0.85); color:#1a2410; }
 
   /* ---- 목록으로 ---- */
   #homeLink { position:fixed; right:14px; top:14px; z-index:40;
@@ -54,6 +56,7 @@
   <button id="zoomIn" aria-label="확대">+</button>
   <button id="zoomLevel" aria-label="배율 되돌리기">100%</button>
   <button id="zoomOut" aria-label="축소">&#8722;</button>
+  <button id="zoomAuto" class="on" aria-label="자동 배율 켜기/끄기">AUTO</button>
 </div>
 
 <div id="hud">
@@ -107,16 +110,51 @@
   // 그리기는 전부 (월드좌표 - 카메라) 로 되어 있으므로, 캔버스에 배율 변환만
   // 걸어주면 게임 로직은 손대지 않고 확대/축소가 된다.
   // 화면 픽셀 = (월드 - 카메라) * zoom
-  const MIN_ZOOM = 0.3, MAX_ZOOM = 3;
+  // 다 자란 개미는 지름이 1000px를 넘으므로 자동 배율이 충분히 빠질 수 있어야 한다
+  const MIN_ZOOM = 0.15, MAX_ZOOM = 3;
   let zoom = 1;
+
+  // 자동 배율: 개미 지름이 화면 짧은 변의 이 비율을 넘지 않도록 맞춘다.
+  // 확대(1배 초과)는 하지 않는다 — 작을 때는 원래 시야를 그대로 두고,
+  // 커져서 화면을 가릴 때만 빠지는 것이 목적이다.
+  const AUTO_ANT_FRAC = 0.25;
+  let autoZoomOn = true;
 
   // 현재 배율에서 화면에 담기는 월드 크기
   function viewW(){ return W / zoom; }
   function viewH(){ return H / zoom; }
 
+  const zoomLevelEl = document.getElementById('zoomLevel');
+  const zoomAutoEl = document.getElementById('zoomAuto');
+
   function setZoom(z){
     zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
-    document.getElementById('zoomLevel').textContent = Math.round(zoom*100) + '%';
+    const pct = Math.round(zoom*100) + '%';
+    if(zoomLevelEl.textContent !== pct) zoomLevelEl.textContent = pct;
+  }
+
+  function setAutoZoom(on){
+    autoZoomOn = on;
+    zoomAutoEl.classList.toggle('on', on);
+  }
+
+  // 손으로 조절하면 자동 배율은 꺼진다 (카메라 수동 초점과 같은 동작)
+  function manualZoom(z){
+    setAutoZoom(false);
+    setZoom(z);
+  }
+
+  function autoZoomTarget(){
+    const r = radiusFromMass(ant.mass);
+    const minDim = Math.min(W, H);
+    return Math.max(MIN_ZOOM, Math.min(1, AUTO_ANT_FRAC * minDim / (2*r)));
+  }
+
+  function updateAutoZoom(dt){
+    if(!autoZoomOn) return;
+    // 건물을 삼키면 질량이 한 번에 뛰므로, 목표 배율로 부드럽게 따라간다
+    const target = autoZoomTarget();
+    setZoom(zoom + (target - zoom) * Math.min(1, dt*3));
   }
   let stageHumanShown=false, stageBuildingShown=false, victoryShown=false;
   let gameRunning=false, gameOver=false;
@@ -144,6 +182,7 @@
       pointerActive = false;
       pinchDist0 = touchSpread(e.touches);
       pinchZoom0 = zoom;
+      setAutoZoom(false);
       return;
     }
     pointerActive = true;
@@ -167,17 +206,18 @@
   // 마우스 휠
   canvas.addEventListener('wheel', e=>{
     e.preventDefault();
-    setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1/1.15));
+    manualZoom(zoom * (e.deltaY < 0 ? 1.15 : 1/1.15));
   }, {passive:false});
 
   // 버튼 / 키보드
-  document.getElementById('zoomIn').addEventListener('click', ()=> setZoom(zoom*1.25));
-  document.getElementById('zoomOut').addEventListener('click', ()=> setZoom(zoom/1.25));
-  document.getElementById('zoomLevel').addEventListener('click', ()=> setZoom(1));
+  document.getElementById('zoomIn').addEventListener('click', ()=> manualZoom(zoom*1.25));
+  document.getElementById('zoomOut').addEventListener('click', ()=> manualZoom(zoom/1.25));
+  zoomLevelEl.addEventListener('click', ()=> manualZoom(1));
+  zoomAutoEl.addEventListener('click', ()=> setAutoZoom(!autoZoomOn));
   window.addEventListener('keydown', e=>{
-    if(e.key === '+' || e.key === '=') setZoom(zoom*1.25);
-    else if(e.key === '-' || e.key === '_') setZoom(zoom/1.25);
-    else if(e.key === '0') setZoom(1);
+    if(e.key === '+' || e.key === '=') manualZoom(zoom*1.25);
+    else if(e.key === '-' || e.key === '_') manualZoom(zoom/1.25);
+    else if(e.key === '0') manualZoom(1);
   });
 
   function rand(a,b){ return a + Math.random()*(b-a); }
@@ -192,7 +232,8 @@
     food=[]; humans=[]; buildings=[]; particles=[];
     stageHumanShown=false; stageBuildingShown=false; victoryShown=false;
     invincibleTimer=1.5;
-    setZoom(1);   // 개미가 다시 작아지므로 배율도 기본으로
+    // 자동이 켜져 있으면 다음 프레임에 알아서 맞춰지므로 건드리지 않는다
+    if(!autoZoomOn) setZoom(1);
 
     for(let i=0;i<140;i++) spawnFood();
 
@@ -592,6 +633,7 @@
       updateHumans(dt);
       updateBuildings();
       updateParticles(dt);
+      updateAutoZoom(dt);   // 카메라가 이번 프레임 배율을 쓰도록 먼저
       updateCamera();
       checkStageTransitions();
       updateHUD();
