@@ -130,12 +130,49 @@ button.btn {
 }
 button.btn:hover { border-color: var(--accent); background: var(--card-hover); }
 
+/* ---- 링크 복사 안내 ---- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(8px);
+  z-index: 60;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 11px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast strong { display: block; font-size: 14px; }
+/* 주소가 길어도 잘리지 않고 접히도록 */
+.toast span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  word-break: break-all;
+}
+
 /* ---- FAQ ---- */
-.faq-fab {
+.fab-row {
   position: fixed;
   right: 20px;
   bottom: calc(20px + env(safe-area-inset-bottom));
   z-index: 50;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fab {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -152,8 +189,8 @@ button.btn:hover { border-color: var(--accent); background: var(--card-hover); }
   transition: transform .15s ease, background .15s ease, border-color .15s ease;
 }
 
-.faq-fab:hover { transform: translateY(-2px); background: var(--card-hover); border-color: var(--accent); }
-.faq-fab span {
+.fab:hover { transform: translateY(-2px); background: var(--card-hover); border-color: var(--accent); }
+.fab span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,7 +310,9 @@ button.btn:hover { border-color: var(--accent); background: var(--card-hover); }
 .faq-addr { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 
 @media (max-width: 480px) {
-  .faq-fab { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); padding: 13px 16px; font-size: 13px; }
+  .fab-row { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); gap: 8px; }
+  .fab { padding: 13px 16px; font-size: 13px; }
+  .toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .faq-modal { max-height: 85vh; }
   .faq-body { max-height: calc(85vh - 210px); }
 }

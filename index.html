@@ -145,7 +145,15 @@
 
 </div>
 
-<button class="faq-fab" id="faqOpen" aria-haspopup="dialog"><span aria-hidden="true">?</span> FAQ</button>
+<div class="fab-row">
+  <button class="fab" id="shareBtn" aria-label="이 페이지 주소 복사하고 공유하기"><span aria-hidden="true">↗</span> 공유</button>
+  <button class="fab" id="faqOpen" aria-haspopup="dialog"><span aria-hidden="true">?</span> FAQ</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <strong id="toastMsg"></strong>
+  <span id="toastUrl"></span>
+</div>
 
 <dialog class="faq-modal" id="faqModal" aria-labelledby="faqTitle">
   <div class="faq-head">
@@ -242,6 +250,77 @@
     mailLink.href = 'mailto:hys6588@gmail.com'
       + '?subject=' + encodeURIComponent('[Minigames] 문의')
       + '&body=' + encodeURIComponent(body);
+  });
+})();
+
+// ---------- 주소 복사 / 공유 ----------
+// 게임 페이지는 스크롤이 잠겨 있어 주소창을 끌어낼 수 없다.
+// 폰에서는 기본 공유 시트를, PC에서는 클립보드 복사를 쓴다.
+(function(){
+  var shareBtn = document.getElementById('shareBtn');
+  var toastEl  = document.getElementById('toast');
+  var toastMsg = document.getElementById('toastMsg');
+  var toastUrl = document.getElementById('toastUrl');
+  var toastTimer = null;
+
+  function toast(msg, url){
+    toastMsg.textContent = msg;
+    toastUrl.textContent = url || '';
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 3000);
+  }
+
+  // 구형 브라우저와 비보안 컨텍스트에서도 복사가 되도록 남겨두는 경로
+  function legacyCopy(text){
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(
+        function(){ return true; },
+        function(){ return legacyCopy(text); }
+      );
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function copyAndTell(url){
+    return copyText(url).then(function(ok){
+      if (ok) toast('링크를 복사했어요', url);
+      else {
+        // 복사까지 막힌 환경 — 직접 선택해서 복사할 수 있게 보여준다
+        toast('아래 주소를 길게 눌러 복사하세요', url);
+        window.prompt('아래 주소를 복사하세요', url);
+      }
+    });
+  }
+
+  shareBtn.addEventListener('click', function(){
+    var url = location.href;
+    var canSheet = !!navigator.share && window.matchMedia('(pointer: coarse)').matches;
+
+    if (canSheet) {
+      navigator.share({ title: document.title, url: url })['catch'](function(err){
+        if (err && err.name === 'AbortError') return;   // 사용자가 공유를 취소함
+        copyAndTell(url);
+      });
+      return;
+    }
+    copyAndTell(url);
   });
 })();
 </script>
