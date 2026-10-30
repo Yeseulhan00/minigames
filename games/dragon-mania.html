@@ -283,6 +283,16 @@ const ADMIN_HASH=3397284524;          // 코드를 바꾸려면 아래 adminHash
 function adminHash(s){let x=5381;for(let i=0;i<s.length;i++)x=((x<<5)+x+s.charCodeAt(i))>>>0;return x}
 let isAdmin=false;
 try{isAdmin=localStorage.getItem(ADMIN_KEY)==='1'}catch(e){}
+/* 운영자는 불꽃을 치르지 않는다. 구매 판정이 네 군데로 흩어져 있어
+   한 곳에서만 결정하도록 모아 둔다. 깎을지 말지도 여기서만 정한다. */
+function spend(c){
+  if(isAdmin)return true;      // 불꽃을 건드리지 않고 통과
+  if(S.flame<c)return false;
+  S.flame-=c;
+  return true;
+}
+const costLabel=c=>isAdmin?'무료':fmt(c);
+
 function setAdmin(on){
   isAdmin=on;
   try{on?localStorage.setItem(ADMIN_KEY,'1'):localStorage.removeItem(ADMIN_KEY)}catch(e){}
@@ -574,17 +584,17 @@ function upd(){
   else{$('gf').style.width='100%';$('gl').textContent='최고 단계';$('gr').textContent='고룡'}
   $('dname').textContent=si===0?'정체불명의 알':d.n;
   $('dstage').textContent=si===0?`${d.n}의 알 · 터치해서 따뜻하게`:`${STAGES[si].n} · ${RAR[d.r].n} 등급`;
-  document.querySelectorAll('[data-cost]').forEach(b=>{b.disabled=S.flame<+b.dataset.cost});
+  document.querySelectorAll('[data-cost]').forEach(b=>{b.disabled=!isAdmin&&S.flame<+b.dataset.cost});
   $('dexcount').textContent=`${Object.keys(S.owned).length}/${DRAGONS.length}`;
 }
 function renderGrow(){
-  let h=`<div class="row"><div><h4>먹이 주기 <span class="own">Lv.${S.feed}</span></h4><p>터치당 불꽃 +1 (도감 배율 적용)</p></div><button class="buy" data-act="feed" data-cost="${feedCost()}">강화<small>${fmt(feedCost())}</small></button></div>
-  <div class="row"><div><h4>불꽃 숨결 <span class="own">Lv.${S.breath}</span></h4><p>터치할 때 초당 생산량의 1%를 추가로 얻는다.</p></div><button class="buy" data-act="breath" data-cost="${breathCost()}">강화<small>${fmt(breathCost())}</small></button></div>`;
-  GENS.forEach((g,i)=>{h+=`<div class="row"><div><h4>${g.n} <span class="own">×${S.gens[i]}</span></h4><p>${g.d} 개당 초당 ${fmt(g.b*mult())}</p></div><button class="buy" data-act="gen" data-i="${i}" data-cost="${gcost(i)}">${S.buy>1?'×'+S.buy+' ':''}구매<small>${fmt(gcost(i))}</small></button></div>`});
+  let h=`<div class="row"><div><h4>먹이 주기 <span class="own">Lv.${S.feed}</span></h4><p>터치당 불꽃 +1 (도감 배율 적용)</p></div><button class="buy" data-act="feed" data-cost="${feedCost()}">강화<small>${costLabel(feedCost())}</small></button></div>
+  <div class="row"><div><h4>불꽃 숨결 <span class="own">Lv.${S.breath}</span></h4><p>터치할 때 초당 생산량의 1%를 추가로 얻는다.</p></div><button class="buy" data-act="breath" data-cost="${breathCost()}">강화<small>${costLabel(breathCost())}</small></button></div>`;
+  GENS.forEach((g,i)=>{h+=`<div class="row"><div><h4>${g.n} <span class="own">×${S.gens[i]}</span></h4><p>${g.d} 개당 초당 ${fmt(g.b*mult())}</p></div><button class="buy" data-act="gen" data-i="${i}" data-cost="${gcost(i)}">${S.buy>1?'×'+S.buy+' ':''}구매<small>${costLabel(gcost(i))}</small></button></div>`});
   $('growList').innerHTML=h;
 }
 function renderEggs(){
-  $('eggList').innerHTML=EGGS.map(e=>`<div class="egg"><img alt="" src="${thumbOf('egg:'+e.c)}"><div><h4>${e.n}</h4><p>${e.d}</p><button class="buy" data-act="egg" data-id="${e.id}" data-cost="${eggCost(e)}">부화시키기<small>${fmt(eggCost(e))}</small></button></div></div>`).join('');
+  $('eggList').innerHTML=EGGS.map(e=>`<div class="egg"><img alt="" src="${thumbOf('egg:'+e.c)}"><div><h4>${e.n}</h4><p>${e.d}</p><button class="buy" data-act="egg" data-id="${e.id}" data-cost="${eggCost(e)}">부화시키기<small>${costLabel(eggCost(e))}</small></button></div></div>`).join('');
   $('odds').innerHTML='확률<br>'+EGGS.map(e=>{
     const t=e.w.reduce((a,b)=>a+b,0);
     return `<b>${e.n}</b> `+e.w.map((w,i)=>w?`${RAR[i].n} ${+(w/t*100).toFixed(1)}%`:'').filter(Boolean).join(', ');
@@ -621,8 +631,10 @@ function pickDragon(w){
   const pool=DRAGONS.filter(d=>d.r===r);return pool[Math.floor(Math.random()*pool.length)];
 }
 function hatchEgg(e){
-  const cost=eggCost(e);if(S.flame<cost)return;
-  S.flame-=cost;S.hatch++;
+  if(!spend(eggCost(e)))return;
+  // S.hatch는 다음 알 가격만 올리는 값이다. 운영자로 수십 번 까 두면
+  // 모드를 끈 뒤 알이 감당 못 할 가격이 되므로 운영자일 때는 올리지 않는다.
+  if(!isAdmin)S.hatch++;
   const d=pickDragon(e.w),isNew=!S.owned[d.id];
   S.owned[d.id]=(S.owned[d.id]||0)+1;
   dirty();save();
@@ -669,9 +681,9 @@ function adminHatch(id){
 document.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act;
-  if(a==='feed'){const c=feedCost();if(S.flame>=c){S.flame-=c;S.feed++;renderAll();dirty()}}
-  if(a==='breath'){const c=breathCost();if(S.flame>=c){S.flame-=c;S.breath++;renderAll();dirty()}}
-  if(a==='gen'){const i=+b.dataset.i,c=gcost(i);if(S.flame>=c){S.flame-=c;S.gens[i]+=S.buy;renderAll();dirty()}}
+  if(a==='feed'){if(spend(feedCost())){S.feed++;renderAll();dirty()}}
+  if(a==='breath'){if(spend(breathCost())){S.breath++;renderAll();dirty()}}
+  if(a==='gen'){const i=+b.dataset.i;if(spend(gcost(i))){S.gens[i]+=S.buy;renderAll();dirty()}}
   if(a==='egg')hatchEgg(EGGS.find(e=>e.id===b.dataset.id));
   if(a==='pick'){S.active=b.dataset.id;renderAll();dirty();toast(DMAP[S.active].n+'을(를) 키웁니다')}
   if(a==='adm-get')adminGrant(b.dataset.id);
