@@ -16,7 +16,14 @@ button:focus-visible,.stage:focus-visible{outline:3px solid var(--gold);outline-
 .barleft{display:flex;align-items:flex-end;gap:10px;min-width:0}
 .home{flex:none;color:var(--ink-dim);text-decoration:none;font-size:13px;line-height:1;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
 .home:hover{color:var(--ink);border-color:var(--gold)}
-.logo{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.logo{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1;cursor:default}
+.adminbadge{display:none;flex:none;align-self:center;font-size:11px;font-weight:800;color:#2b1a00;background:var(--gold);border-radius:99px;padding:4px 9px;letter-spacing:.02em}
+body.admin .adminbadge{display:block}
+/* 운영자는 아직 못 얻은 용도 실루엣이 아니라 제 모습으로 봐야 고를 수 있다 */
+body.admin .card.lock img{filter:none;opacity:.85}
+.card button.adm{margin-top:5px;background:var(--panel-2);border-color:var(--gold);color:var(--gold)}
+.admbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.admbar button{background:var(--gold);color:#2b1a00;border:0;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800}
 .logo small{display:block;font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:4px;letter-spacing:0}
 .res{text-align:right}
 .res .big{font-size:30px;font-weight:900;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
@@ -102,7 +109,8 @@ textarea{width:100%;height:90px;border-radius:10px;background:#150f33;color:var(
   <header class="bar">
     <div class="barleft">
       <a class="home" href="../index.html">← 목록</a>
-      <div class="logo">드래곤매니아<small>알을 품고, 용을 키우고, 도감을 채우자</small></div>
+      <div class="logo" id="logo">드래곤매니아<small>알을 품고, 용을 키우고, 도감을 채우자</small></div>
+      <span class="adminbadge" id="adminBadge">운영자</span>
     </div>
     <div class="res">
       <div class="big" id="flame">0</div>
@@ -265,6 +273,21 @@ const EGGS=[
 ];
 const STAGES=[{n:'알',at:0,s:1.1},{n:'해츨링',at:50,s:.5},{n:'어린 용',at:3000,s:.68},{n:'성룡',at:150000,s:.88},{n:'고룡',at:6e6,s:1.05}];
 const SAVE_KEY='dragonmania:save';
+
+/* ================= 운영자 모드 =================
+   정적 페이지라 서버가 없다. 코드 확인은 전부 브라우저 안에서만 일어나므로
+   이건 '잠금'이 아니라 일반 방문자가 실수로 켜지 않게 하는 가림막이다.
+   소스를 읽을 수 있는 사람은 누구나 풀 수 있다. */
+const ADMIN_KEY='dragonmania:admin';
+const ADMIN_HASH=3397284524;          // 코드를 바꾸려면 아래 adminHash()로 새 값을 구해 넣으세요
+function adminHash(s){let x=5381;for(let i=0;i<s.length;i++)x=((x<<5)+x+s.charCodeAt(i))>>>0;return x}
+let isAdmin=false;
+try{isAdmin=localStorage.getItem(ADMIN_KEY)==='1'}catch(e){}
+function setAdmin(on){
+  isAdmin=on;
+  try{on?localStorage.setItem(ADMIN_KEY,'1'):localStorage.removeItem(ADMIN_KEY)}catch(e){}
+  document.body.classList.toggle('admin',on);
+}
 
 /* ================= 상태/계산 ================= */
 const $=id=>document.getElementById(id);
@@ -566,14 +589,17 @@ function renderEggs(){
 let dexQueue=[];
 function renderDex(){
   const have=Object.keys(S.owned).length;
-  $('dexHead').innerHTML=`도감 <b>${have}/${DRAGONS.length}</b> · 전체 생산 배율 <b>×${mult().toFixed(2)}</b>`;
+  $('dexHead').innerHTML=`도감 <b>${have}/${DRAGONS.length}</b> · 전체 생산 배율 <b>×${mult().toFixed(2)}</b>`
+    +(isAdmin?`<div class="admbar"><button data-act="adm-all">모든 용 무료 획득</button></div>`:'');
   $('dexList').innerHTML=DRAGONS.map(d=>{
     const n=S.owned[d.id]||0,has=n>0,bonus=has?RAR[d.r].p*(1+.25*(n-1)):RAR[d.r].p;
     return `<div class="card R${d.r} ${has?'':'lock'} ${S.active===d.id?'active':''}">
       <div class="im"><img alt="" data-t="${d.id}" src="${thumbs[d.id]||''}"></div>
-      <b>${has?d.n:'???'}</b><div class="r R${d.r}">${RAR[d.r].n}</div>
+      <b>${has||isAdmin?d.n:'???'}</b><div class="r R${d.r}">${RAR[d.r].n}</div>
       <div class="m">${has?`보유 ${n}마리 · +${Math.round(bonus*100)}%`:`획득 시 +${Math.round(bonus*100)}%`}</div>
-      ${has?`<button data-act="pick" data-id="${d.id}">${S.active===d.id?'키우는 중':'이 용 키우기'}</button>`:''}</div>`;
+      ${has?`<button data-act="pick" data-id="${d.id}">${S.active===d.id?'키우는 중':'이 용 키우기'}</button>`:''}
+      ${isAdmin?`<button class="adm" data-act="adm-get" data-id="${d.id}">무료 획득</button>
+      <button class="adm" data-act="adm-hatch" data-id="${d.id}">지정 부화</button>`:''}</div>`;
   }).join('');
   dexQueue=[...document.querySelectorAll('#dexList img[data-t]')].filter(i=>!i.getAttribute('src'));
   (function step(){
@@ -596,8 +622,12 @@ function hatchEgg(e){
   const d=pickDragon(e.w),isNew=!S.owned[d.id];
   S.owned[d.id]=(S.owned[d.id]||0)+1;
   dirty();save();
+  revealHatch(d,isNew,e.c);
+}
+/* 알이 흔들리다 용이 드러나는 연출. 보통 부화와 운영자 지정 부화가 함께 쓴다 */
+function revealHatch(d,isNew,eggColor){
   $('hatchOv').classList.add('on');
-  $('hatchPic').innerHTML=`<img class="shake" alt="" src="${thumbOf('egg:'+e.c)}">`;
+  $('hatchPic').innerHTML=`<img class="shake" alt="" src="${thumbOf('egg:'+eggColor)}">`;
   ['hatchName','hatchTag','hatchDesc'].forEach(i=>$(i).textContent='');
   $('hatchOk').style.display='none';
   setTimeout(()=>{
@@ -609,6 +639,29 @@ function hatchEgg(e){
     renderAll();
   },1300);
 }
+function adminGrant(id){
+  if(!isAdmin)return;
+  const d=DMAP[id];if(!d)return;
+  S.owned[id]=(S.owned[id]||0)+1;
+  dirty();save();renderAll();
+  toast(d.n+' 획득 (보유 '+S.owned[id]+'마리)');
+}
+function adminGrantAll(){
+  if(!isAdmin)return;
+  let added=0;
+  DRAGONS.forEach(d=>{if(!S.owned[d.id]){S.owned[d.id]=1;added++}});
+  dirty();save();renderAll();
+  toast(added?('새로 '+added+'종을 도감에 등록했어요'):'이미 모든 용을 보유 중이에요');
+}
+function adminHatch(id){
+  if(!isAdmin)return;
+  const d=DMAP[id];if(!d)return;
+  const isNew=!S.owned[id];
+  S.owned[id]=(S.owned[id]||0)+1;
+  dirty();save();
+  revealHatch(d,isNew,EGGS[0].c);
+}
+
 document.addEventListener('click',ev=>{
   const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;
   const a=b.dataset.act;
@@ -617,7 +670,25 @@ document.addEventListener('click',ev=>{
   if(a==='gen'){const i=+b.dataset.i,c=gcost(i);if(S.flame>=c){S.flame-=c;S.gens[i]+=S.buy;renderAll();dirty()}}
   if(a==='egg')hatchEgg(EGGS.find(e=>e.id===b.dataset.id));
   if(a==='pick'){S.active=b.dataset.id;renderAll();dirty();toast(DMAP[S.active].n+'을(를) 키웁니다')}
+  if(a==='adm-get')adminGrant(b.dataset.id);
+  if(a==='adm-all')adminGrantAll();
+  if(a==='adm-hatch')adminHatch(b.dataset.id);
 });
+
+/* 로고를 빠르게 5번 누르면 운영자 코드를 묻는다 */
+(function(){
+  let n=0,t=null;
+  $('logo').addEventListener('click',()=>{
+    n++;clearTimeout(t);t=setTimeout(()=>{n=0},1500);
+    if(n<5)return;
+    n=0;
+    if(isAdmin){setAdmin(false);renderAll();toast('운영자 모드를 껐어요');return}
+    const code=window.prompt('운영자 코드');
+    if(code===null)return;
+    if(adminHash(code.trim())===ADMIN_HASH){setAdmin(true);renderAll();toast('운영자 모드를 켰어요')}
+    else toast('코드가 올바르지 않아요');
+  });
+})();
 $('hatchOk').onclick=()=>$('hatchOv').classList.remove('on');
 document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
   S.buy=+b.dataset.buy;
@@ -657,6 +728,7 @@ $('loadBtn').onclick=()=>{
 
 /* ================= 시작 ================= */
 (async function init(){
+  setAdmin(isAdmin);          // 새로고침해도 운영자 상태가 유지되도록
   initStage();
   await loadSave();
   renderAll();
