@@ -339,6 +339,10 @@ async function loadSave(){
 }
 setInterval(save,15000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+/* 목록으로 나가거나 탭을 닫는 순간. 같은 탭 안에서의 이동은 visibilitychange가
+   브라우저마다 뜨기도 하고 안 뜨기도 해서, 표준 훅인 pagehide를 함께 건다.
+   localStorage 쓰기는 동기라 페이지가 사라지기 전에 끝난다. */
+window.addEventListener('pagehide',()=>{save()});
 
 /* ================= 3D: 공통 ================= */
 const HAS3D=typeof THREE!=='undefined';
