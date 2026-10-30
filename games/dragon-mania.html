@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>드래곤매니아 3D</title>
+<style>
+:root{--ember:#e8793a;--gold:#f2b134;--ink:#f6efe3;--ink-dim:#b9afd0;--panel:#1d1642;--panel-2:#2a2060;--line:#3d3278;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#150f33;color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
+body{min-height:100vh;display:flex;justify-content:center}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.stage:focus-visible{outline:3px solid var(--gold);outline-offset:-3px}
+.app{width:100%;max-width:1040px;display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+.bar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:14px 16px 10px;background:#150f33}
+.barleft{display:flex;align-items:flex-end;gap:10px;min-width:0}
+.home{flex:none;color:var(--ink-dim);text-decoration:none;font-size:13px;line-height:1;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.home:hover{color:var(--ink);border-color:var(--gold)}
+.logo{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.logo small{display:block;font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:4px;letter-spacing:0}
+.res{text-align:right}
+.res .big{font-size:30px;font-weight:900;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.res .sub{font-size:12px;color:var(--ink-dim);margin-top:4px}
+.main{display:grid;grid-template-columns:1fr}
+@media(min-width:860px){.main{grid-template-columns:1.1fr 1fr}}
+.stage{position:relative;height:54vh;min-height:340px;overflow:hidden;background:linear-gradient(#241b52 0%,#5a3578 55%,#c9603f 88%,#e8793a 100%);user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab}
+@media(min-width:860px){.stage{height:calc(100vh - 62px)}}
+.stage .bg{position:absolute;inset:0;width:100%;height:100%}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.nameplate{position:absolute;left:14px;top:12px;z-index:3;pointer-events:none}
+.nameplate b{font-size:18px}
+.nameplate span{display:block;font-size:12px;color:#e9ddff;margin-top:2px}
+.hint{position:absolute;right:14px;top:14px;z-index:3;font-size:11.5px;color:#e9ddff;opacity:.8;pointer-events:none;text-align:right}
+.growth{position:absolute;left:14px;right:14px;bottom:12px;z-index:3;pointer-events:none}
+.growth .track{height:8px;border-radius:99px;background:rgba(10,6,30,.55);overflow:hidden}
+.growth .fill{height:100%;width:0;background:var(--gold);border-radius:99px;transition:width .2s}
+.growth .lbl{display:flex;justify-content:space-between;font-size:11.5px;color:#f2e6ff;margin-bottom:5px}
+.float{position:absolute;z-index:5;pointer-events:none;font-weight:900;color:#fff3c4;text-shadow:0 2px 6px rgba(0,0,0,.6);animation:rise .9s ease-out forwards;font-size:20px}
+@keyframes rise{to{transform:translateY(-70px);opacity:0}}
+.golden{position:absolute;z-index:6;width:58px;height:58px;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c8,#f2b134 55%,#c8731c);box-shadow:0 0 24px 8px rgba(242,177,52,.7);animation:pulse 1.2s ease-in-out infinite;font-size:26px}
+@keyframes pulse{50%{transform:scale(1.14)}}
+.nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:4;font-weight:700}
+.side{background:var(--panel);display:flex;flex-direction:column;min-height:0}
+@media(min-width:860px){.side{height:calc(100vh - 62px)}}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:#150f33;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:13px 4px;font-weight:700;color:var(--ink-dim);border-bottom:3px solid transparent}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--gold)}
+.panel{display:none;padding:12px 14px 40px;overflow:auto;flex:1}
+.panel.on{display:block}
+.toggle{display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:13px;color:var(--ink-dim)}
+.toggle button{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:5px 12px}
+.toggle button[aria-pressed=true]{background:var(--gold);color:#2b1a00;border-color:var(--gold);font-weight:800}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;margin-bottom:8px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line)}
+.row h4{margin:0;font-size:15px}
+.row p{margin:3px 0 0;font-size:12px;color:var(--ink-dim);line-height:1.4}
+.row .own{color:#5fd6c8;font-weight:700}
+.buy{min-width:92px;padding:9px 10px;border-radius:10px;border:0;background:var(--ember);color:#fff;font-weight:800;font-size:13px;line-height:1.25}
+.buy small{display:block;font-weight:600;opacity:.9;font-size:11px}
+.buy:disabled{background:#3b3470;color:#8f86b8;cursor:not-allowed}
+.eggs{display:grid;gap:10px}
+.egg{display:grid;grid-template-columns:84px 1fr;gap:12px;align-items:center;padding:12px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.egg img{width:84px;height:84px;object-fit:contain}
+.egg h4{margin:0 0 3px}
+.egg p{margin:0 0 8px;font-size:12px;color:var(--ink-dim)}
+.odds{font-size:11.5px;color:var(--ink-dim);margin-top:12px;line-height:1.7}
+.dexhead{font-size:13px;color:var(--ink-dim);margin-bottom:10px;line-height:1.5}
+.dexhead b{color:var(--gold)}
+.dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px}
+.card{padding:8px 8px 10px;border-radius:12px;background:var(--panel-2);border:2px solid var(--line);text-align:center}
+.card.active{box-shadow:0 0 0 2px var(--gold)}
+.card .im{height:92px;display:flex;align-items:center;justify-content:center}
+.card img{width:100%;height:92px;object-fit:contain}
+.card.lock img{filter:brightness(0) opacity(.5)}
+.card b{display:block;font-size:13px;margin-top:2px}
+.card .r{font-size:11px;font-weight:800}
+.card .m{font-size:11px;color:var(--ink-dim);margin-top:2px;line-height:1.35}
+.card button{margin-top:6px;width:100%;padding:6px;border-radius:8px;border:1px solid var(--line);background:#150f33;font-size:12px;font-weight:700}
+.R0{color:#c6c6d4}.R1{color:#6fb7ff}.R2{color:#c28bff}.R3{color:#ffc84a}.R4{color:#ff8fc9}
+.card.R0{border-color:#4a4580}.card.R1{border-color:#2f6aa8}.card.R2{border-color:#7a49b8}.card.R3{border-color:#b8861c}.card.R4{border-color:#b84d86}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(10,6,28,.82);display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.on{display:flex}
+.modal{width:min(360px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 18px;text-align:center}
+.modal .pic img{width:220px;height:220px;object-fit:contain}
+.modal h3{margin:6px 0 2px;font-size:22px}
+.modal .tag{font-weight:800;font-size:13px}
+.modal p{color:var(--ink-dim);font-size:13px;margin:8px 0 14px;line-height:1.5}
+.modal .ok{padding:10px 26px;border-radius:10px;border:0;background:var(--gold);color:#2b1a00;font-weight:900}
+.shake{animation:shake .45s infinite}
+.pop{animation:popin .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes shake{20%{transform:rotate(-8deg)}40%{transform:rotate(7deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(5deg)}}
+@keyframes popin{from{transform:scale(.3);opacity:0}}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#f6efe3;color:#241b52;font-weight:800;padding:10px 16px;border-radius:99px;z-index:60;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+textarea{width:100%;height:90px;border-radius:10px;background:#150f33;color:var(--ink);border:1px solid var(--line);padding:8px;font-size:11px;resize:none}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:8px;padding:6px 12px;font-size:12px}
+.savebar{display:flex;gap:10px;align-items:center;margin-top:16px;font-size:12px;color:var(--ink-dim)}
+@media(prefers-reduced-motion:reduce){.golden,.shake,.pop{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="barleft">
+      <a class="home" href="../index.html">← 목록</a>
+      <div class="logo">드래곤매니아<small>알을 품고, 용을 키우고, 도감을 채우자</small></div>
+    </div>
+    <div class="res">
+      <div class="big" id="flame">0</div>
+      <div class="sub">불꽃 · 초당 <span id="dps">0</span> · 터치당 <span id="tap">1</span></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="stage" id="stage" tabindex="0" role="button" aria-label="용을 터치해서 불꽃 모으기. 끌어서 돌려볼 수 있어요">
+      <svg class="bg" viewBox="0 0 400 500" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <circle cx="318" cy="88" r="30" fill="#f3e9ff" opacity=".9"/>
+        <circle cx="330" cy="80" r="26" fill="#3a2a74" opacity=".35"/>
+        <g fill="#fff" opacity=".7"><circle cx="40" cy="60" r="1.5"/><circle cx="110" cy="34" r="1.2"/><circle cx="190" cy="76" r="1.6"/><circle cx="250" cy="28" r="1.2"/><circle cx="70" cy="130" r="1.1"/><circle cx="370" cy="170" r="1.4"/></g>
+        <path d="M0 360 L70 270 L120 330 L190 240 L260 340 L320 290 L400 370 L400 500 L0 500Z" fill="#3a2466" opacity=".85"/>
+        <path d="M0 410 L60 350 L130 400 L210 330 L290 410 L350 370 L400 415 L400 500 L0 500Z" fill="#2a1a4a"/>
+      </svg>
+      <canvas id="cv"></canvas>
+      <div class="nameplate"><b id="dname">—</b><span id="dstage">—</span></div>
+      <div class="hint">터치: 불꽃 모으기<br>끌기: 돌려보기</div>
+      <div class="growth">
+        <div class="lbl"><span id="gl">성장</span><span id="gr"></span></div>
+        <div class="track"><div class="fill" id="gf"></div></div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="grow">성장</button>
+        <button role="tab" aria-selected="false" data-tab="hatch">알 부화</button>
+        <button role="tab" aria-selected="false" data-tab="dex">도감 <span id="dexcount"></span></button>
+      </div>
+      <div class="panel on" id="p-grow">
+        <div class="toggle"><span>구매 수량</span>
+          <button data-buy="1" aria-pressed="true">×1</button>
+          <button data-buy="10" aria-pressed="false">×10</button>
+          <button data-buy="100" aria-pressed="false">×100</button>
+        </div>
+        <div id="growList"></div>
+        <div class="savebar"><span id="saveState">자동 저장 확인 중…</span><button class="ghost" id="saveBtn">저장 코드</button></div>
+      </div>
+      <div class="panel" id="p-hatch"><div class="eggs" id="eggList"></div><div class="odds" id="odds"></div></div>
+      <div class="panel" id="p-dex"><div class="dexhead" id="dexHead"></div><div class="dex" id="dexList"></div></div>
+    </aside>
+  </div>
+</div>
+
+<div class="overlay" id="hatchOv"><div class="modal">
+  <div class="pic" id="hatchPic"></div>
+  <h3 id="hatchName"></h3><div class="tag" id="hatchTag"></div>
+  <p id="hatchDesc"></p>
+  <button class="ok" id="hatchOk" style="display:none">확인</button>
+</div></div>
+
+<div class="overlay" id="saveOv"><div class="modal">
+  <h3 style="font-size:18px">저장 코드</h3>
+  <p>자동 저장과 별개로, 이 코드를 복사해 두면 다른 곳에서도 이어서 할 수 있어요.</p>
+  <textarea id="saveText" aria-label="저장 코드"></textarea>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+    <button class="ok" id="loadBtn">불러오기</button>
+    <button class="ghost" id="saveClose">닫기</button>
+  </div>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* 이 게임은 호스트가 제공하던 window.storage API로 자동 저장하도록 작성돼 있다.
+   GitHub Pages에는 그런 API가 없어 자동 저장이 통째로 꺼지므로,
+   localStorage로 같은 모양({value}를 돌려주는 get / set)을 만들어 준다.
+   게임 쪽 저장 코드는 한 줄도 고치지 않는다. */
+(function(){
+  if(window.storage) return;
+  window.storage = {
+    get: function(k){
+      try{
+        var v = localStorage.getItem(k);
+        return v === null ? null : { value: v };
+      }catch(e){
+        return null;                      // 시크릿 모드 등에서 차단된 경우
+      }
+    },
+    set: function(k, v){
+      localStorage.setItem(k, v);         // 실패하면 그대로 던져서 '자동 저장 실패'가 뜨게 한다
+    }
+  };
+})();
+</script>
+<script>
+/* ================= 데이터 ================= */
+const RAR=[{n:'일반',p:.05},{n:'희귀',p:.15},{n:'영웅',p:.4},{n:'전설',p:1},{n:'신화',p:2.5}];
+// D(이름, 등급, 몸색, 배색, 설명, 옵션) — w:날개크기 h:뿔 hd:머리수 t:꼬리 sp:등가시 sc:몸집 e:눈색 em:발광 g:반투명 x:무지개
+const D=(n,r,c,b,desc,o={})=>Object.assign({n,r,c,b,desc,w:1,h:2,hd:1,t:1,sp:1,sc:1,e:'#ffd84a',em:0,g:false,x:false},o);
+const DEFS=[
+ // 일반 12
+ D('홍염룡',0,'#d9482b','#f2b27a','작은 불씨를 삼키고 자란 붉은 용.'),
+ D('이끼룡',0,'#5f8f45','#c5e08f','등에 이끼가 자라는 느긋한 용.',{sp:0}),
+ D('물방울룡',0,'#3f9bd0','#bfe6f7','숨 쉴 때마다 물방울이 맺힌다.',{w:.8}),
+ D('모래룡',0,'#cf9f4c','#f0dba6','사막 바람을 타고 다니는 용.',{h:0,sp:2}),
+ D('바위룡',0,'#8a8478','#c9c2b2','바위처럼 단단한 비늘을 가졌다.',{w:.7,sp:3}),
+ D('솜털룡',0,'#efe6d8','#fff8ee','솜사탕 같은 몸이 포근하다.',{w:1.1,h:0,sp:0,e:'#5a3a2a'}),
+ D('꽃잎룡',0,'#e58bb0','#ffd6e6','날개가 꽃잎처럼 생겼다.',{w:1.2,sp:0}),
+ D('대나무룡',0,'#7fb85a','#dff2b0','대나무 숲을 지키는 긴 꼬리의 용.',{t:1.3}),
+ D('호박룡',0,'#e0892f','#ffd27a','호박 속에 잠들어 있던 용.',{h:4}),
+ D('구름룡',0,'#bcd0e8','#f2f7ff','구름 위에서 낮잠을 즐긴다.',{w:1.4,sp:0}),
+ D('숯불룡',0,'#4a3f3a','#8a6a5a','꺼지지 않는 숯불을 품고 있다.',{e:'#ff4a2a',sp:2}),
+ D('이슬룡',0,'#7fd0c0','#d4f5ee','새벽 이슬로 몸을 씻는다.',{t:1.2}),
+ // 희귀 11
+ D('번개룡',1,'#f2c94c','#fff0a8','꼬리를 휘두르면 찌릿한 소리가 난다.',{w:1.2,h:4,e:'#ffffff'}),
+ D('서리룡',1,'#8fd3e8','#e8f9ff','내쉬는 숨이 눈송이로 변한다.',{h:4,e:'#2a5a8a'}),
+ D('독안개룡',1,'#9b5de5','#d8b8ff','보랏빛 안개 속에 숨어 지낸다.',{sp:2,e:'#b6ff4a'}),
+ D('바람룡',1,'#8fe0b0','#e0ffee','바람보다 빠르게 하늘을 가른다.',{w:1.5,t:1.3,h:0}),
+ D('수정룡',1,'#b78cff','#efe0ff','등에 수정이 돋아 반짝인다.',{sp:3,h:4,em:.15}),
+ D('산호룡',1,'#ff8f8f','#ffe0d0','산호 같은 뿔이 가지처럼 뻗었다.',{h:6,sp:3}),
+ D('늪지룡',1,'#4e7d5a','#b8c88a','늪에서 눈만 내밀고 사냥한다.',{t:1.4,e:'#c8ff5a'}),
+ D('노을룡',1,'#f08a5d','#ffd0a0','저녁 하늘과 같은 빛깔의 용.',{w:1.4}),
+ D('철갑룡',1,'#8c97a6','#d0d8e0','쇳덩이 같은 갑옷 비늘의 용.',{sp:3,sc:1.1,w:.8}),
+ D('호수룡',1,'#4fc3d9','#d0f4ff','맑은 호수 밑바닥에서 살던 용.',{t:1.3}),
+ D('단풍룡',1,'#c4632a','#f2c27a','가을 숲의 단풍을 닮은 날개의 용.',{w:1.4,sp:2}),
+ // 영웅 10
+ D('용암룡',2,'#ff5a1f','#ffb066','비늘 사이로 용암이 흐른다.',{sp:3,h:6,e:'#ffffff',em:.35}),
+ D('심해룡',2,'#1b6ca8','#7fd0e8','깊은 바다의 빛을 품고 있다.',{w:1.2,t:1.4,e:'#aaffff',em:.15}),
+ D('폭풍룡',2,'#6c7cb8','#c0c8f0','날갯짓 한 번에 먹구름이 몰려온다.',{w:1.6,h:4}),
+ D('화산룡',2,'#b53a1e','#f08a4a','등에서 연기가 피어오르는 거대한 용.',{sc:1.15,sp:3,h:4,em:.25}),
+ D('오로라룡',2,'#5ae0b8','#c8ffe8','날개에 오로라가 일렁인다.',{w:1.6,em:.3}),
+ D('가시룡',2,'#6a4a2a','#c8a070','온몸이 가시로 덮여 있다.',{sp:3,h:6,sc:1.1}),
+ D('쌍두룡',2,'#c24b6a','#f5b0c0','머리가 둘이라 늘 논쟁 중이다.',{hd:2}),
+ D('사파이어룡',2,'#2f5de0','#9ab8ff','푸른 보석 같은 비늘을 가졌다.',{h:4,sp:3,em:.3}),
+ D('유령룡',2,'#cfd8ff','#ffffff','반쯤 투명해서 벽도 통과한다.',{g:true,w:1.3,e:'#7a9aff'}),
+ D('황혼룡',2,'#7a5ac8','#d0b8ff','해 질 녘에만 나타나는 보랏빛 용.',{w:1.5,h:4,em:.2}),
+ // 전설 8
+ D('황금룡',3,'#f2b134','#ffe08a','보물창고를 지키는 전설의 수호자.',{h:4,w:1.5,sc:1.15,em:.3}),
+ D('그림자룡',3,'#3a3568','#8a82c8','달이 없는 밤에만 모습을 드러낸다.',{w:1.5,h:4,e:'#ff6aff',em:.2}),
+ D('불사조룡',3,'#ff7a2a','#ffd45a','잿더미에서 몇 번이고 되살아난다.',{w:1.8,t:1.4,sp:3,em:.4}),
+ D('얼음왕룡',3,'#aeeaff','#ffffff','영원한 겨울을 다스리는 왕.',{h:6,w:1.4,sp:3,sc:1.15,e:'#2a5a8a'}),
+ D('천둥왕룡',3,'#ffe14a','#fff6b0','울음소리 하나로 하늘을 가른다.',{h:6,w:1.5,em:.4,e:'#ffffff'}),
+ D('삼두룡',3,'#7a2fc0','#c8a0f0','세 개의 머리가 각자 다른 생각을 한다.',{hd:3,w:1.3,sc:1.15}),
+ D('대지의 왕룡',3,'#7a6a3a','#d0c08a','산이 움직이는 줄 알았더니 용이었다.',{sc:1.3,sp:3,h:6}),
+ D('달빛룡',3,'#d8e0ff','#ffffff','달빛을 먹고 자라는 은빛 용.',{w:1.7,h:4,em:.35,e:'#7aaaff'}),
+ // 신화 4
+ D('태초의 용',4,'#c9b8ff','#ffffff','세상이 시작될 때부터 존재했다는 용.',{x:true,w:1.8,h:6,sc:1.2,em:.25}),
+ D('우주룡',4,'#2a1a5a','#6a4aaa','몸 안에 작은 은하가 흐른다.',{hd:2,w:2,h:6,sc:1.2,e:'#ffffff',em:.55}),
+ D('세계수룡',4,'#3fae5a','#bff08a','등에서 세계수가 자란다고 전해진다.',{h:8,sp:3,w:1.6,sc:1.3,t:1.5,em:.2}),
+ D('용왕',4,'#ffd45e','#fff0b0','모든 용이 고개를 숙이는 단 하나의 왕.',{hd:3,w:2,h:8,sc:1.3,em:.45})
+];
+const DRAGONS=DEFS.map((d,i)=>Object.assign(d,{id:'d'+i}));
+const DMAP=Object.fromEntries(DRAGONS.map(d=>[d.id,d]));
+const GENS=[
+ {n:'불씨 둥지',d:'따뜻한 짚 둥지에서 불씨가 자란다.',b:.5,c:15},
+ {n:'용암 샘',d:'끓는 샘에서 불꽃이 솟는다.',b:4,c:120},
+ {n:'화산 동굴',d:'동굴 깊은 곳에서 열기가 올라온다.',b:25,c:1100},
+ {n:'보물창고',d:'금화 더미가 뜨겁게 달아오른다.',b:140,c:12000},
+ {n:'하늘 성채',d:'구름 위에서 용들이 불을 피운다.',b:800,c:130000},
+ {n:'용의 제국',d:'대륙 전체가 용의 불꽃으로 밝아진다.',b:5000,c:1.5e6},
+ {n:'차원의 용문',d:'다른 세계의 불꽃이 흘러들어 온다.',b:40000,c:2e7}
+];
+const EGGS=[
+ {id:'basic',n:'보통 알',d:'어떤 용이 나올지 모르는 따뜻한 알.',base:300,w:[60,28,9,2.6,.4],c:'#e9d8b4'},
+ {id:'ancient',n:'고대의 알',d:'희귀 이상 확정! 전설·신화 확률이 높다.',base:9000,w:[0,52,32,13,3],c:'#a98cff'},
+ {id:'myth',n:'신화의 알',d:'영웅 이상 확정! 신화가 노려볼 만하다.',base:400000,w:[0,0,35,45,20],c:'#ff9ad0'}
+];
+const STAGES=[{n:'알',at:0,s:1.1},{n:'해츨링',at:50,s:.5},{n:'어린 용',at:3000,s:.68},{n:'성룡',at:150000,s:.88},{n:'고룡',at:6e6,s:1.05}];
+const SAVE_KEY='dragonmania:save';
+
+/* ================= 상태/계산 ================= */
+const $=id=>document.getElementById(id);
+const fresh=()=>({v:2,flame:0,total:0,feed:0,breath:0,gens:GENS.map(()=>0),owned:{d0:1},active:'d0',hatch:0,buy:1,ts:Date.now()});
+let S=fresh();
+function fmt(n){
+  if(n<10)return(Math.floor(n*10)/10).toString();
+  if(n<10000)return Math.floor(n).toLocaleString('ko-KR');
+  const u=['','만','억','조','경','해','자'];let i=0;
+  while(n>=10000&&i<u.length-1){n/=10000;i++}
+  return(n>=1000?n.toFixed(0):n>=100?n.toFixed(1):n.toFixed(2))+u[i];
+}
+function mult(){let b=0;for(const id in S.owned){const d=DMAP[id];if(d)b+=RAR[d.r].p*(1+.25*(S.owned[id]-1))}return 1+b}
+function dps(){return S.gens.reduce((a,c,i)=>a+c*GENS[i].b,0)*mult()}
+function tapVal(){return(1+S.feed)*mult()+S.breath*.01*dps()}
+function gcost(i,n=S.buy){return GENS[i].c*Math.pow(1.15,S.gens[i])*(Math.pow(1.15,n)-1)/.15}
+const feedCost=()=>25*Math.pow(1.6,S.feed);
+const breathCost=()=>500*Math.pow(2.2,S.breath);
+const eggCost=e=>Math.floor(e.base*Math.pow(1.12,S.hatch));
+function stageIdx(){let k=0;STAGES.forEach((s,i)=>{if(S.total>=s.at)k=i});return k}
+
+/* ================= 저장 ================= */
+let saveTimer=null,storageOK=typeof window.storage!=='undefined';
+function dirty(){clearTimeout(saveTimer);saveTimer=setTimeout(save,1200)}
+async function save(){
+  if(!storageOK)return;
+  try{S.ts=Date.now();await window.storage.set(SAVE_KEY,JSON.stringify(S));$('saveState').textContent='자동 저장됨'}
+  catch(e){$('saveState').textContent='자동 저장 실패 · 저장 코드를 이용하세요'}
+}
+function applySave(o){
+  const n=Object.assign(fresh(),o);
+  n.gens=GENS.map((_,i)=>+n.gens?.[i]||0);
+  const own={};for(const k in n.owned||{})if(DMAP[k])own[k]=n.owned[k];
+  n.owned=Object.keys(own).length?own:{d0:1};
+  if(!DMAP[n.active]||!n.owned[n.active])n.active=Object.keys(n.owned)[0];
+  S=n;
+}
+async function loadSave(){
+  if(!storageOK){$('saveState').textContent='자동 저장 불가 · 저장 코드를 이용하세요';return}
+  try{
+    const r=await window.storage.get(SAVE_KEY);
+    if(r&&r.value){
+      const o=JSON.parse(r.value);applySave(o);
+      const away=Math.min((Date.now()-(o.ts||Date.now()))/1000,8*3600);
+      if(away>60){const g=dps()*away*.5;if(g>0){gain(g);toast('자리를 비운 사이 불꽃 +'+fmt(g))}}
+      $('saveState').textContent='저장된 게임을 불러왔어요';
+    }else $('saveState').textContent='자동 저장 켜짐';
+  }catch(e){$('saveState').textContent='자동 저장 켜짐'}
+}
+setInterval(save,15000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+
+/* ================= 3D: 공통 ================= */
+const HAS3D=typeof THREE!=='undefined';
+let GEO,WING_GEO;
+if(HAS3D){
+  GEO={sph:new THREE.SphereGeometry(1,20,14),cone:new THREE.ConeGeometry(1,1,10),cyl:new THREE.CylinderGeometry(1,1,1,10)};
+  const s=new THREE.Shape();
+  s.moveTo(0,0);s.bezierCurveTo(.2,1.2,1.2,2.2,2.6,2.0);
+  s.quadraticCurveTo(2.2,1.4,2.3,.9);s.quadraticCurveTo(1.8,1.0,1.7,.4);
+  s.quadraticCurveTo(1.2,.6,.9,0);s.lineTo(0,0);
+  WING_GEO=new THREE.ShapeGeometry(s,12);
+}
+function mesh(g,m,p,s,r){const o=new THREE.Mesh(g,m);o.position.set(p[0],p[1],p[2]);o.scale.set(s[0],s[1],s[2]);if(r)o.rotation.set(r[0],r[1],r[2]);return o}
+
+function buildDragon(d){
+  const g=new THREE.Group(),mats=[],tail=[],wings=[],heads=[];
+  const col=new THREE.Color(d.c),belly=new THREE.Color(d.b);
+  const mk=(c,o={})=>{const m=new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.55,metalness:.08},o));mats.push(m);return m};
+  const glow=d.em?{emissive:col,emissiveIntensity:d.em}:{};
+  const ghost=d.g?{transparent:true,opacity:.62}:{};
+  const bodyM=mk(col,Object.assign({},glow,ghost));
+  const bellyM=mk(belly,Object.assign({roughness:.7},ghost));
+  const wingCol=col.clone().lerp(belly,.25).multiplyScalar(.85);
+  const wingM=mk(wingCol,{side:THREE.DoubleSide,roughness:.7,transparent:true,opacity:d.g?.5:.93,emissive:col,emissiveIntensity:d.em*.6});
+  const accM=mk(new THREE.Color(d.r>=3?'#ffe08a':'#efe3c8'),{roughness:.4});
+  const eyeM=mk(new THREE.Color(d.e),{emissive:new THREE.Color(d.e),emissiveIntensity:.9});
+  // 몸통
+  const body=mesh(GEO.sph,bodyM,[0,.9,0],[1.25,.85,.8]);g.add(body);
+  g.add(mesh(GEO.sph,bellyM,[.1,.72,0],[1.1,.6,.72]));
+  // 다리
+  [[.55,.45],[.55,-.45],[-.55,.45],[-.55,-.45]].forEach(([x,z])=>{
+    g.add(mesh(GEO.cyl,bodyM,[x,.4,z*.9],[.2,.75,.2]));
+    g.add(mesh(GEO.sph,bodyM,[x+.1,.1,z],[.32,.14,.22]));
+  });
+  // 머리(여러 개 가능)
+  for(let i=0;i<d.hd;i++){
+    const off=i-(d.hd-1)/2;
+    const hg=new THREE.Group();hg.position.set(.8,.95,off*.35);hg.rotation.y=-off*.5;
+    hg.add(mesh(GEO.sph,bodyM,[.2,.3,0],[.4,.4,.4]));
+    hg.add(mesh(GEO.sph,bodyM,[.55,.7,0],[.33,.33,.33]));
+    hg.add(mesh(GEO.sph,bodyM,[.85,1.05,0],[.29,.29,.29]));
+    hg.add(mesh(GEO.sph,bodyM,[1.2,1.25,0],[.46,.34,.34]));
+    hg.add(mesh(GEO.sph,bodyM,[1.55,1.12,0],[.34,.19,.2]));
+    hg.add(mesh(GEO.sph,bellyM,[1.5,1.0,0],[.34,.09,.17]));
+    [1,-1].forEach(s=>{
+      hg.add(mesh(GEO.sph,eyeM,[1.3,1.37,s*.27],[.075,.075,.075]));
+      hg.add(mesh(GEO.sph,bodyM,[1.1,1.42,s*.27],[.12,.1,.1]));
+    });
+    for(let k=0;k<d.h;k++){
+      const side=k%2?-1:1,lv=Math.floor(k/2);
+      hg.add(mesh(GEO.cone,accM,[1.05-lv*.14,1.55-lv*.04,side*(.14+lv*.07)],[.09,.5-lv*.05,.09],[side*.35,0,.9+lv*.2]));
+    }
+    g.add(hg);heads.push({g:hg,ph:i*1.7,by:-off*.5});
+  }
+  // 꼬리
+  const N=Math.round(7*d.t);
+  for(let i=0;i<N;i++){
+    const r=.5*(1-i/N)+.08,x=-1-i*.4,y=.8-i*.06;
+    const m=mesh(GEO.sph,bodyM,[x,y,0],[r*1.1,r,r]);g.add(m);tail.push({m,i,by:y});
+  }
+  const tipX=-1-N*.4;
+  const tip=mesh(GEO.cone,accM,[tipX,.8-N*.06,0],[.14,.5,.14],[0,0,Math.PI/2]);g.add(tip);tail.push({m:tip,i:N,by:.8-N*.06});
+  // 등 가시
+  const ns=3+d.sp*3;
+  for(let i=0;i<ns;i++){
+    const x=.9-i*(3.9/ns);let y;
+    if(x>-1.1)y=.9+.85*Math.sqrt(Math.max(0,1-Math.pow(x/1.25,2)))-.05;
+    else{const idx=(-1-x)/.4;y=.8-.06*idx+(.5*(1-idx/N)+.08)*.9}
+    if(d.sp>0||i%3===0)g.add(mesh(GEO.cone,accM,[x,y,0],[.1*(.7+d.sp*.2),.14+.1*d.sp,.1*(.7+d.sp*.2)],[0,0,.3]));
+  }
+  // 날개
+  [1,-1].forEach(s=>{
+    const p=new THREE.Group();p.position.set(.1,1.6,s*.5);p.scale.setScalar(d.w*.85);
+    const w=new THREE.Mesh(WING_GEO,wingM);w.rotation.y=s>0?-Math.PI/2:Math.PI/2;p.add(w);
+    g.add(p);wings.push({p,s:-s});
+  });
+  // 기운(전설+)
+  let ring=null;
+  if(d.r>=3){
+    const n=40,pos=new Float32Array(n*3);
+    for(let i=0;i<n;i++){const a=Math.random()*6.283,r=2.6+Math.random()*1.3;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=.3+Math.random()*3.4;pos[i*3+2]=Math.sin(a)*r}
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const pm=new THREE.PointsMaterial({color:d.r===4?0xffffff:col,size:.14,transparent:true,opacity:.85});mats.push(pm);
+    ring=new THREE.Points(geo,pm);ring.position.set(-.75,0,0);g.add(ring);
+  }
+  if(d.r>=2){const L=new THREE.PointLight(col,.9,9);L.position.set(0,2.5,2);g.add(L)}
+  g.scale.setScalar(d.sc);
+  const update=t=>{
+    tail.forEach(s=>{const k=Math.sin(t*1.6-s.i*.5);s.m.position.z=k*.06*s.i;s.m.position.y=s.by+Math.sin(t*1.6-s.i*.5+1)*.015*s.i});
+    const f=Math.sin(t*2.2)*.5;
+    wings.forEach(w=>{w.p.rotation.x=w.s*(.3+f*.55)});
+    heads.forEach(h=>{h.g.rotation.z=Math.sin(t*1.1+h.ph)*.05;h.g.rotation.y=h.by+Math.sin(t*.8+h.ph)*.1});
+    body.scale.y=.85*(1+Math.sin(t*1.4)*.02);
+    if(ring)ring.rotation.y=t*.4;
+    if(d.x){const c=new THREE.Color().setHSL((t*.08)%1,.6,.72);bodyM.color.copy(c);bodyM.emissive.copy(c);wingM.color.setHSL(((t*.08)+.15)%1,.55,.7);wingM.emissive.copy(wingM.color)}
+  };
+  update(.4);
+  return{g,update,mats};
+}
+function buildEgg(color){
+  const g=new THREE.Group(),mats=[];
+  const c=new THREE.Color(color),dk=c.clone().multiplyScalar(.55);
+  const m=new THREE.MeshStandardMaterial({color:c,roughness:.45,emissive:c,emissiveIntensity:0});mats.push(m);
+  const sm=new THREE.MeshStandardMaterial({color:dk,roughness:.6});mats.push(sm);
+  const nm=new THREE.MeshStandardMaterial({color:0x6b4a2a,roughness:.9});mats.push(nm);
+  const egg=new THREE.Group();egg.position.y=.2;
+  egg.add(mesh(GEO.sph,m,[0,1.15,0],[.85,1.15,.85]));
+  for(let i=0;i<9;i++){
+    const th=.5+i*.3,ph=i*2.4,x=Math.sin(th)*Math.cos(ph)*.85,y=1.15+Math.cos(th)*1.15,z=Math.sin(th)*Math.sin(ph)*.85;
+    const sp=mesh(GEO.sph,sm,[x*.97,y,z*.97],[.16,.16,.16]);egg.add(sp);
+  }
+  g.add(egg);
+  const nest=new THREE.Mesh(new THREE.TorusGeometry(.95,.14,8,24),nm);nest.rotation.x=Math.PI/2;nest.position.y=.2;g.add(nest);
+  let prog=0;
+  const update=t=>{egg.rotation.z=Math.sin(t*3)*.04*prog;egg.rotation.x=Math.cos(t*2.6)*.03*prog;m.emissiveIntensity=prog*.5*(.6+.4*Math.sin(t*4))};
+  return{g,update,mats,setProg:p=>{prog=p}};
+}
+function addLights(sc){
+  sc.add(new THREE.AmbientLight(0xb8a8ff,.75));
+  const k=new THREE.DirectionalLight(0xfff0d8,1.05);k.position.set(5,9,6);sc.add(k);
+  const r=new THREE.DirectionalLight(0xff9a6a,.6);r.position.set(-6,3,-5);sc.add(r);
+}
+
+/* ---------- 도감/알 썸네일 (한 번만 그려서 캐시) ---------- */
+let prend,pscene,pcam;const thumbs={};
+function thumbOf(key){
+  if(thumbs[key])return thumbs[key];
+  if(!HAS3D)return'';
+  if(!prend){
+    prend=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+    prend.setPixelRatio(1);prend.setSize(260,260);
+    pscene=new THREE.Scene();addLights(pscene);
+    pcam=new THREE.PerspectiveCamera(36,1,.1,100);pcam.position.set(7.5,4.6,9.5);pcam.lookAt(0,1.5,0);
+  }
+  const isEgg=key.startsWith('egg:');
+  const o=isEgg?buildEgg(key.slice(4)):buildDragon(DMAP[key]);
+  const root=new THREE.Group();
+  if(isEgg){o.setProg(0);root.scale.setScalar(1.7);root.position.y=-.4}else o.g.position.x=.75;
+  root.add(o.g);root.rotation.y=-.5;pscene.add(root);
+  prend.render(pscene,pcam);
+  const url=prend.domElement.toDataURL('image/png');
+  pscene.remove(root);o.mats.forEach(m=>m.dispose());
+  return thumbs[key]=url;
+}
+
+/* ================= 3D: 메인 무대 ================= */
+let renderer,scene,camera,pivot,cur=null,curKey='',curScale=.2,hitT=0,dragY=0;
+function initStage(){
+  const stage=$('stage');
+  if(!HAS3D){const n=document.createElement('div');n.className='nogl';n.textContent='3D 엔진(three.js)을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.';stage.appendChild(n);return}
+  try{renderer=new THREE.WebGLRenderer({canvas:$('cv'),antialias:true,alpha:true})}
+  catch(e){const n=document.createElement('div');n.className='nogl';n.textContent='이 기기에서는 3D(WebGL)를 쓸 수 없어요.';stage.appendChild(n);return}
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  scene=new THREE.Scene();addLights(scene);
+  camera=new THREE.PerspectiveCamera(38,1,.1,100);
+  // 받침대
+  const plat=new THREE.Mesh(new THREE.CylinderGeometry(3.9,4.3,.4,40),new THREE.MeshStandardMaterial({color:0x2a1a3a,roughness:.9}));plat.position.set(0,-.2,0);scene.add(plat);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(3.95,.07,8,60),new THREE.MeshStandardMaterial({color:0xe8793a,emissive:0xe8793a,emissiveIntensity:.9}));ring.rotation.x=Math.PI/2;ring.position.y=.02;scene.add(ring);
+  pivot=new THREE.Group();scene.add(pivot);
+  const fit=()=>{
+    const w=stage.clientWidth,h=stage.clientHeight;
+    renderer.setSize(w,h,false);camera.aspect=w/h;
+    const dist=12.5/Math.pow(Math.min(1,camera.aspect),.55);
+    const dir=new THREE.Vector3(.58,.34,.74).normalize();
+    camera.position.copy(dir.multiplyScalar(dist));camera.lookAt(0,1.5,0);
+    camera.updateProjectionMatrix();
+  };
+  new ResizeObserver(fit).observe(stage);fit();
+  const t0=performance.now();
+  (function loop(){
+    requestAnimationFrame(loop);
+    const t=(performance.now()-t0)/1000;
+    syncScene();
+    if(cur){
+      cur.update(t);
+      const target=STAGES[stageIdx()].s;
+      curScale+=(target-curScale)*.08;
+      hitT*=.86;
+      pivot.scale.set(curScale*(1+.04*hitT),curScale*(1-.09*hitT),curScale*(1+.04*hitT));
+      pivot.rotation.y=-.55+Math.sin(t*.35)*.22+dragY;
+    }
+    renderer.render(scene,camera);
+  })();
+}
+function syncScene(){
+  if(!pivot)return;
+  const si=stageIdx(),d=DMAP[S.active];
+  const key=(si===0?'egg:':'dr:')+S.active;
+  if(si===0&&cur&&cur.setProg)cur.setProg(Math.min(1,S.total/50));
+  if(key===curKey)return;
+  curKey=key;
+  if(cur){pivot.remove(cur.g);cur.mats.forEach(m=>m.dispose())}
+  if(si===0){cur=buildEgg(d.c);cur.g.position.x=0}
+  else{cur=buildDragon(d);cur.g.position.x=.75}
+  pivot.add(cur.g);curScale=.25;
+}
+
+/* 터치 + 끌어서 돌리기 */
+(function(){
+  const st=$('stage');let down=null;
+  st.addEventListener('pointerdown',e=>{if(e.target.closest('.golden'))return;down={x:e.clientX,y:e.clientY,lx:e.clientX,moved:false};st.setPointerCapture(e.pointerId);st.style.cursor='grabbing'});
+  st.addEventListener('pointermove',e=>{
+    if(!down)return;
+    if(Math.abs(e.clientX-down.x)+Math.abs(e.clientY-down.y)>8)down.moved=true;
+    if(down.moved){dragY+=(e.clientX-down.lx)*.012}down.lx=e.clientX;
+  });
+  st.addEventListener('pointerup',e=>{if(!down)return;const m=down.moved;down=null;st.style.cursor='';if(!m)tap(e.clientX,e.clientY)});
+  st.addEventListener('pointercancel',()=>{down=null;st.style.cursor=''});
+  st.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tap(0,0)}});
+})();
+function tap(cx,cy){
+  const v=tapVal(),prev=stageIdx();gain(v);hitT=1;
+  const st=$('stage'),r=st.getBoundingClientRect();
+  const x=cx?cx-r.left:r.width/2,y=cy?cy-r.top:r.height/2;
+  const f=document.createElement('div');f.className='float';f.textContent='+'+fmt(v);
+  f.style.left=(x-14)+'px';f.style.top=(y-30)+'px';st.appendChild(f);setTimeout(()=>f.remove(),900);
+  if(stageIdx()>prev){toast(prev===0?'알이 부화했다!':`${STAGES[stageIdx()].n}(으)로 성장했다!`);dirty()}
+  upd();
+}
+
+/* ================= UI ================= */
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200)}
+function gain(n){S.flame+=n;S.total+=n}
+function upd(){
+  $('flame').textContent=fmt(S.flame);$('dps').textContent=fmt(dps());$('tap').textContent=fmt(tapVal());
+  const si=stageIdx(),nx=STAGES[si+1],d=DMAP[S.active];
+  if(nx){const a=STAGES[si].at,p=(S.total-a)/(nx.at-a);$('gf').style.width=Math.min(100,p*100)+'%';
+    $('gl').textContent=si===0?'부화까지':`${nx.n}까지`;$('gr').textContent=`${fmt(S.total)} / ${fmt(nx.at)}`}
+  else{$('gf').style.width='100%';$('gl').textContent='최고 단계';$('gr').textContent='고룡'}
+  $('dname').textContent=si===0?'정체불명의 알':d.n;
+  $('dstage').textContent=si===0?`${d.n}의 알 · 터치해서 따뜻하게`:`${STAGES[si].n} · ${RAR[d.r].n} 등급`;
+  document.querySelectorAll('[data-cost]').forEach(b=>{b.disabled=S.flame<+b.dataset.cost});
+  $('dexcount').textContent=`${Object.keys(S.owned).length}/${DRAGONS.length}`;
+}
+function renderGrow(){
+  let h=`<div class="row"><div><h4>먹이 주기 <span class="own">Lv.${S.feed}</span></h4><p>터치당 불꽃 +1 (도감 배율 적용)</p></div><button class="buy" data-act="feed" data-cost="${feedCost()}">강화<small>${fmt(feedCost())}</small></button></div>
+  <div class="row"><div><h4>불꽃 숨결 <span class="own">Lv.${S.breath}</span></h4><p>터치할 때 초당 생산량의 1%를 추가로 얻는다.</p></div><button class="buy" data-act="breath" data-cost="${breathCost()}">강화<small>${fmt(breathCost())}</small></button></div>`;
+  GENS.forEach((g,i)=>{h+=`<div class="row"><div><h4>${g.n} <span class="own">×${S.gens[i]}</span></h4><p>${g.d} 개당 초당 ${fmt(g.b*mult())}</p></div><button class="buy" data-act="gen" data-i="${i}" data-cost="${gcost(i)}">${S.buy>1?'×'+S.buy+' ':''}구매<small>${fmt(gcost(i))}</small></button></div>`});
+  $('growList').innerHTML=h;
+}
+function renderEggs(){
+  $('eggList').innerHTML=EGGS.map(e=>`<div class="egg"><img alt="" src="${thumbOf('egg:'+e.c)}"><div><h4>${e.n}</h4><p>${e.d}</p><button class="buy" data-act="egg" data-id="${e.id}" data-cost="${eggCost(e)}">부화시키기<small>${fmt(eggCost(e))}</small></button></div></div>`).join('');
+  $('odds').innerHTML='확률<br>'+EGGS.map(e=>{
+    const t=e.w.reduce((a,b)=>a+b,0);
+    return `<b>${e.n}</b> `+e.w.map((w,i)=>w?`${RAR[i].n} ${+(w/t*100).toFixed(1)}%`:'').filter(Boolean).join(', ');
+  }).join('<br>')+`<br>같은 등급 안에서는 모든 용이 같은 확률이에요.`;
+}
+let dexQueue=[];
+function renderDex(){
+  const have=Object.keys(S.owned).length;
+  $('dexHead').innerHTML=`도감 <b>${have}/${DRAGONS.length}</b> · 전체 생산 배율 <b>×${mult().toFixed(2)}</b>`;
+  $('dexList').innerHTML=DRAGONS.map(d=>{
+    const n=S.owned[d.id]||0,has=n>0,bonus=has?RAR[d.r].p*(1+.25*(n-1)):RAR[d.r].p;
+    return `<div class="card R${d.r} ${has?'':'lock'} ${S.active===d.id?'active':''}">
+      <div class="im"><img alt="" data-t="${d.id}" src="${thumbs[d.id]||''}"></div>
+      <b>${has?d.n:'???'}</b><div class="r R${d.r}">${RAR[d.r].n}</div>
+      <div class="m">${has?`보유 ${n}마리 · +${Math.round(bonus*100)}%`:`획득 시 +${Math.round(bonus*100)}%`}</div>
+      ${has?`<button data-act="pick" data-id="${d.id}">${S.active===d.id?'키우는 중':'이 용 키우기'}</button>`:''}</div>`;
+  }).join('');
+  dexQueue=[...document.querySelectorAll('#dexList img[data-t]')].filter(i=>!i.getAttribute('src'));
+  (function step(){
+    let n=0;
+    while(dexQueue.length&&n<4){const im=dexQueue.shift();im.src=thumbOf(im.dataset.t);n++}
+    if(dexQueue.length)setTimeout(step,16);
+  })();
+}
+function renderAll(){renderGrow();renderEggs();renderDex();upd()}
+
+/* ---------- 행동 ---------- */
+function pickDragon(w){
+  const t=w.reduce((a,b)=>a+b,0);let x=Math.random()*t,r=0;
+  for(let i=0;i<w.length;i++){x-=w[i];if(x<0){r=i;break}}
+  const pool=DRAGONS.filter(d=>d.r===r);return pool[Math.floor(Math.random()*pool.length)];
+}
+function hatchEgg(e){
+  const cost=eggCost(e);if(S.flame<cost)return;
+  S.flame-=cost;S.hatch++;
+  const d=pickDragon(e.w),isNew=!S.owned[d.id];
+  S.owned[d.id]=(S.owned[d.id]||0)+1;
+  dirty();save();
+  $('hatchOv').classList.add('on');
+  $('hatchPic').innerHTML=`<img class="shake" alt="" src="${thumbOf('egg:'+e.c)}">`;
+  ['hatchName','hatchTag','hatchDesc'].forEach(i=>$(i).textContent='');
+  $('hatchOk').style.display='none';
+  setTimeout(()=>{
+    $('hatchPic').innerHTML=`<img class="pop" alt="${d.n}" src="${thumbOf(d.id)}">`;
+    $('hatchName').textContent=d.n;
+    $('hatchTag').textContent=RAR[d.r].n+' 등급';$('hatchTag').className='tag R'+d.r;
+    $('hatchDesc').textContent=(isNew?'새로운 용을 도감에 등록했다! ':`이미 있던 용이다. 보유 ${S.owned[d.id]}마리, 배율이 올랐다. `)+d.desc;
+    $('hatchOk').style.display='';$('hatchOk').focus();
+    renderAll();
+  },1300);
+}
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;
+  const a=b.dataset.act;
+  if(a==='feed'){const c=feedCost();if(S.flame>=c){S.flame-=c;S.feed++;renderAll();dirty()}}
+  if(a==='breath'){const c=breathCost();if(S.flame>=c){S.flame-=c;S.breath++;renderAll();dirty()}}
+  if(a==='gen'){const i=+b.dataset.i,c=gcost(i);if(S.flame>=c){S.flame-=c;S.gens[i]+=S.buy;renderAll();dirty()}}
+  if(a==='egg')hatchEgg(EGGS.find(e=>e.id===b.dataset.id));
+  if(a==='pick'){S.active=b.dataset.id;renderAll();dirty();toast(DMAP[S.active].n+'을(를) 키웁니다')}
+});
+$('hatchOk').onclick=()=>$('hatchOv').classList.remove('on');
+document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
+  S.buy=+b.dataset.buy;
+  document.querySelectorAll('[data-buy]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  renderGrow();upd();
+});
+document.querySelectorAll('[data-tab]').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.tab));
+  if(t.dataset.tab==='dex')renderDex();
+  if(t.dataset.tab==='hatch')renderEggs();
+});
+
+/* 황금 불꽃 */
+function spawnGolden(){
+  const stg=$('stage');
+  if(!stg.querySelector('.golden')){
+    const g=document.createElement('button');g.className='golden';g.textContent='🔥';g.setAttribute('aria-label','황금 불꽃');
+    g.style.left=(10+Math.random()*70)+'%';g.style.top=(18+Math.random()*45)+'%';
+    g.onclick=e=>{e.stopPropagation();const v=dps()*45+tapVal()*40;gain(v);toast('황금 불꽃! 불꽃 +'+fmt(v));g.remove();upd()};
+    stg.appendChild(g);setTimeout(()=>g.remove(),12000);
+  }
+  setTimeout(spawnGolden,45000+Math.random()*45000);
+}
+setTimeout(spawnGolden,25000);
+
+/* 저장 코드 */
+$('saveBtn').onclick=()=>{$('saveText').value=btoa(unescape(encodeURIComponent(JSON.stringify(S))));$('saveOv').classList.add('on')};
+$('saveClose').onclick=()=>$('saveOv').classList.remove('on');
+$('loadBtn').onclick=()=>{
+  try{
+    const o=JSON.parse(decodeURIComponent(escape(atob($('saveText').value.trim()))));
+    if(!o||typeof o.flame!=='number')throw 0;
+    applySave(o);curKey='';$('saveOv').classList.remove('on');renderAll();save();toast('불러왔어요');
+  }catch(e){toast('저장 코드가 올바르지 않아요')}
+};
+
+/* ================= 시작 ================= */
+(async function init(){
+  initStage();
+  await loadSave();
+  renderAll();
+  let last=performance.now(),acc=0;
+  setInterval(()=>{
+    const now=performance.now(),dt=Math.min((now-last)/1000,5);last=now;
+    const prev=stageIdx();gain(dps()*dt);
+    if(stageIdx()>prev){toast(prev===0?'알이 부화했다!':`${STAGES[stageIdx()].n}(으)로 성장했다!`);dirty()}
+    upd();
+    acc+=dt;
+    if(acc>2){acc=0;if($('p-grow').classList.contains('on')&&!(document.activeElement&&document.activeElement.closest('#growList')))renderGrow()}
+  },100);
+})();
+</script>
+</body>
+</html>

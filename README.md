@@ -23,6 +23,7 @@
 | 게임 | 설명 |
 | --- | --- |
 | [드래곤 아일랜드](games/dragon-island.html) | 알을 부화시켜 드래곤을 키우고 팀 전투에 내보내기 |
+| [드래곤매니아 3D](games/dragon-mania.html) | 불꽃을 모아 알을 부화시키고 45종 3D 용 도감을 채우는 방치형 |
 | [카피바라 온천 팡팡](games/capybara-pop.html) | 같은 카피바라 3개를 맞춰 터뜨리는 3매치 퍼즐 |
 | [카드 짝 맞추기](games/memory.html) | 8쌍의 카드를 뒤집어 짝 찾기 |
 
